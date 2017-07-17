@@ -1,7 +1,10 @@
 package com.maxchehab.fingerprinter;
 
 import android.Manifest;
+import android.app.ActivityManager;
 import android.app.KeyguardManager;
+import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.hardware.fingerprint.FingerprintManager;
 import android.security.keystore.KeyGenParameterSpec;
@@ -10,6 +13,7 @@ import android.security.keystore.KeyProperties;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Toast;
 
 import java.io.IOException;
@@ -37,16 +41,33 @@ public class FingerprintActivity extends AppCompatActivity {
     private Cipher cipher;
     private FingerprintManager.CryptoObject cryptoObject;
 
+
+    Intent serviceIntent;
+    private ServerService serverService;
+    Context context;
+
+    public Context getContext(){
+        return context;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        context = this;
         setContentView(R.layout.activity_fingerprint);
+
+        serverService = new ServerService(getContext());
+        serviceIntent = new Intent(getContext(), serverService.getClass());
+
+        if(!isServiceRunning(serverService.getClass())){
+            startService(serviceIntent);
+        }
 
         keyguardManager = (KeyguardManager) getSystemService(KEYGUARD_SERVICE);
         fingerprintManager = (FingerprintManager) getSystemService(FINGERPRINT_SERVICE);
 
         if(!keyguardManager.isKeyguardSecure()){
-            Toast.makeText(this, "Lock screen security not enabled in SEttings", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Lock screen security not enabled in Settings", Toast.LENGTH_LONG).show();
             return;
         }
 
@@ -67,6 +88,26 @@ public class FingerprintActivity extends AppCompatActivity {
             FingerprintHandler helper = new FingerprintHandler(this);
             helper.startAuth(fingerprintManager,cryptoObject);
         }
+    }
+
+    private boolean isServiceRunning(Class<?> serviceClass){
+        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        for(ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)){
+            if(serviceClass.getName().equals(service.service.getClassName())){
+                Log.i("isServiceRunning:",true + "");
+                return true;
+            }
+        }
+
+        Log.i("isServiceRunning:", false + "");
+        return false;
+    }
+
+    @Override
+    protected void onDestroy(){
+        stopService(serviceIntent);
+        Log.i("MAINACT", "onDestroy()");
+        super.onDestroy();
     }
 
 
