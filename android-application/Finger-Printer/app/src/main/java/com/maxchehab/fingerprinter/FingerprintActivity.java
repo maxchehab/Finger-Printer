@@ -56,7 +56,7 @@ public class FingerprintActivity extends AppCompatActivity {
         context = this;
         setContentView(R.layout.activity_fingerprint);
 
-        serverService = new ServerService();
+        serverService = new ServerService(this);
         serviceIntent = new Intent(getContext(), serverService.getClass());
 
         if(!isServiceRunning(serverService.getClass())){

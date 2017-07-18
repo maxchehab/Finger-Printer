@@ -3,10 +3,18 @@ package com.maxchehab.fingerprinter;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.IBinder;
+import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.util.Log;
+
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
+import com.google.gson.stream.MalformedJsonException;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -29,14 +37,20 @@ public class ServerService extends Service {
     private Timer timer;
     private TimerTask timerTask;
 
+    static SharedPreferences sharedPreferences;
 
-    public ServerService(){
+
+
+    public ServerService(Context applicationContext){
         super();
-
         new ServerInitializer().start();
+
+        sharedPreferences = applicationContext.getSharedPreferences("data", MODE_PRIVATE);
 
         Log.i("ServerService","initilized");
     }
+
+    public ServerService(){}
 
     private static class ServerInitializer extends Thread{
         public void run(){
@@ -73,7 +87,7 @@ public class ServerService extends Service {
                 BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
 
-                writer.println("Hello, you have connected!\n");
+                writer.println("Hello, you have connected!");
 
                 while(true){
                     String input = reader.readLine();
@@ -82,6 +96,50 @@ public class ServerService extends Service {
                     }
 
                     Log.i("ServerListener","client #" + clientNumber + " responded with the message {" + input + "}");
+
+                    try {
+                        JsonParser jp = new JsonParser();
+                        JsonElement root = jp.parse(input);
+                        JsonObject rootobj = root.getAsJsonObject();
+
+                        String applicationID = null;
+                        String uniqueKey = null;
+
+                        switch (rootobj.get("command").getAsString()) {
+                            case "knock-knock":
+                                writer.println("{\"sucess\":true,\"message\":\"who is there?\"}");
+                                break;
+                            case "pair":
+                                applicationID = rootobj.get("applicationID").getAsString();
+                                uniqueKey = rootobj.get("uniqueKey").getAsString();
+
+                                if(sharedPreferences.contains(applicationID)){
+                                    writer.println("{\"sucess\":false,\"message\":\"already paired\"}");
+                                    break;
+                                }
+
+                                SharedPreferences.Editor editor = sharedPreferences.edit();
+                                editor.putString(applicationID, uniqueKey);
+                                editor.commit();
+
+                                writer.println("{\"sucess\":true,\"message\":\"paired\"}");
+                                break;
+                            case "authenticate":
+                                applicationID = rootobj.get("applicationID").getAsString();
+                                if(!sharedPreferences.contains(applicationID)){
+                                    writer.println("{\"sucess\":false,\"message\":\"i do not know that application key\"}");
+                                    break;
+                                }
+
+                                authenticate();
+                                writer.println("{\"sucess\":true,\"message\":\"authenticating\"}");
+                                break;
+                            default:
+                                writer.println("{\"sucess\":false,\"message\":\"i do not understand that command\"}");
+                        }
+                    }catch(IllegalStateException | NullPointerException | JsonSyntaxException e){
+                        writer.println("{\"sucess\":false,\"message\":\"i do not understand that command\"}");
+                    }
                 }
             }catch(IOException e){
                 e.printStackTrace();
@@ -95,6 +153,10 @@ public class ServerService extends Service {
         }
     }
 
+    public static void authenticate(){
+
+    }
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId){
         super.onStartCommand(intent, flags, startId);
@@ -106,8 +168,6 @@ public class ServerService extends Service {
     public void onDestroy(){
         super.onDestroy();
         Log.i("ServerService", "onDestroy()");
-
-
 
         Intent broadcastIntent = new Intent(".RestartServer");
         sendBroadcast(broadcastIntent);
