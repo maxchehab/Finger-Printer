@@ -21,12 +21,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        
+
         <service 
             android:name=".ServerService"
             android:enabled="true">
         </service>
-        
+
         <receiver android:name="ServerRestarterBroadcastReceiver"
             android:enabled="true"
             android:exported="true"

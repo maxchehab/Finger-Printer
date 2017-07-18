@@ -1,5 +1,7 @@
 package com.maxchehab.fingerprinter;
 
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -8,6 +10,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
+import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
 import com.google.gson.JsonElement;
@@ -20,6 +23,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.Buffer;
@@ -37,26 +41,30 @@ public class ServerService extends Service {
     private Timer timer;
     private TimerTask timerTask;
 
-    static SharedPreferences sharedPreferences;
+    private static SharedPreferences sharedPreferences;
 
+    private static Context applicationContext;
+
+    static ServerSocket serverSocket;
 
 
     public ServerService(Context applicationContext){
         super();
-        new ServerInitializer().start();
 
-        sharedPreferences = applicationContext.getSharedPreferences("data", MODE_PRIVATE);
 
-        Log.i("ServerService","initilized");
+
+        Log.i("ServerService","initialized");
     }
 
-    public ServerService(){}
+    public ServerService(){
+        Log.i("ServerService","initialized default");
+    }
 
     private static class ServerInitializer extends Thread{
         public void run(){
             int clientNumber = 0;
             try {
-                ServerSocket serverSocket = new ServerSocket(61597);
+                serverSocket = new ServerSocket(61597);
                 try{
                     while(true){
                         new ServerListener(serverSocket.accept(),clientNumber++).start();
@@ -131,14 +139,17 @@ public class ServerService extends Service {
                                     break;
                                 }
 
-                                authenticate();
+                                boolean response = authenticate(applicationID);
                                 writer.println("{\"sucess\":true,\"message\":\"authenticating\"}");
                                 break;
                             default:
                                 writer.println("{\"sucess\":false,\"message\":\"i do not understand that command\"}");
                         }
                     }catch(IllegalStateException | NullPointerException | JsonSyntaxException e){
-                        writer.println("{\"sucess\":false,\"message\":\"i do not understand that command\"}");
+
+                        StringWriter errors = new StringWriter();
+                        e.printStackTrace(new PrintWriter(errors));
+                        writer.println("{\"sucess\":false,\"message\":\"" + errors.toString() + "\"}");
                     }
                 }
             }catch(IOException e){
@@ -153,13 +164,39 @@ public class ServerService extends Service {
         }
     }
 
-    public static void authenticate(){
+    public static boolean authenticate(String applicationID){
+        NotificationCompat.Builder mBuilder =
+                new NotificationCompat.Builder(applicationContext)
+                        .setSmallIcon(R.drawable.ic_fingerprint)
+                        .setContentTitle(applicationID + " requests your authentication")
+                        .setContentText("Tap to authenticate");
 
+        Intent resultIntent = new Intent(applicationContext, FingerprintActivity.class);
+        PendingIntent resultPendingIntent =
+                PendingIntent.getActivity(
+                        applicationContext,
+                        0,
+                        resultIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT
+                );
+        mBuilder.setContentIntent(resultPendingIntent);
+        int mNotificationId = 001;
+        NotificationManager mNotifyMgr = (NotificationManager) applicationContext.getSystemService(NOTIFICATION_SERVICE);
+        mBuilder.setAutoCancel(true);
+        mNotifyMgr.notify(mNotificationId, mBuilder.build());
+
+        return false;
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId){
         super.onStartCommand(intent, flags, startId);
+
+        new ServerInitializer().start();
+        this.applicationContext = this;
+        sharedPreferences = applicationContext.getSharedPreferences("data", MODE_PRIVATE);
+
+
         startTimer();
         return START_STICKY;
     }
@@ -168,7 +205,6 @@ public class ServerService extends Service {
     public void onDestroy(){
         super.onDestroy();
         Log.i("ServerService", "onDestroy()");
-
         Intent broadcastIntent = new Intent(".RestartServer");
         sendBroadcast(broadcastIntent);
         stopTimerTask();
