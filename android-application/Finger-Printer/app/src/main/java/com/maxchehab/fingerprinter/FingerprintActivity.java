@@ -50,6 +50,11 @@ public class FingerprintActivity extends AppCompatActivity {
     private ServerService serverService;
     Context context;
 
+
+    public final static Object sharedLock = new Object();
+    public static boolean authenticate = false;
+
+
     public Context getContext(){
         return context;
     }

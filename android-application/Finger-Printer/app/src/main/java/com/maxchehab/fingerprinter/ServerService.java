@@ -36,6 +36,9 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import static com.maxchehab.fingerprinter.FingerprintActivity.authenticate;
+import static com.maxchehab.fingerprinter.FingerprintActivity.sharedLock;
+
 /**
  * Created by maxchehab on 7/17/17.
  */
@@ -50,6 +53,8 @@ public class ServerService extends Service {
     private static SharedPreferences sharedPreferences;
 
     private static Context applicationContext;
+
+    private static int notificationCounter;
 
     static ServerSocket serverSocket;
 
@@ -150,7 +155,7 @@ public class ServerService extends Service {
                                 }
 
                                 boolean response = authenticate(applicationID);
-                                writer.println("{\"sucess\":true,\"message\":\"authenticating\"}");
+                                writer.println("{\"sucess\":" + response + ",\"message\":\"authenticating\"}");
                                 break;
                             default:
                                 writer.println("{\"sucess\":false,\"message\":\"i do not understand that command\"}");
@@ -192,7 +197,7 @@ public class ServerService extends Service {
     }
 
     public static boolean authenticate(String applicationID){
-
+        notificationCounter++;
 
         String data = sharedPreferences.getString(applicationID,null);
         JsonParser jp = new JsonParser();
@@ -209,6 +214,8 @@ public class ServerService extends Service {
                         .setContentText("Tap to authenticate");
 
         Intent resultIntent = new Intent(applicationContext, FingerprintActivity.class);
+        resultIntent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+
         PendingIntent resultPendingIntent =
                 PendingIntent.getActivity(
                         applicationContext,
@@ -217,13 +224,21 @@ public class ServerService extends Service {
                         PendingIntent.FLAG_UPDATE_CURRENT
                 );
         mBuilder.setContentIntent(resultPendingIntent);
-        int mNotificationId = 001;
         NotificationManager mNotifyMgr = (NotificationManager) applicationContext.getSystemService(NOTIFICATION_SERVICE);
         mBuilder.setAutoCancel(true);
-        mNotifyMgr.notify(mNotificationId, mBuilder.build());
+        mNotifyMgr.notify(notificationCounter, mBuilder.build());
 
-        return false;
+        try{
+            synchronized (sharedLock) {
+                sharedLock.wait();
+            }
+        }catch (InterruptedException e){
+            e.printStackTrace();
+        }
+
+        return authenticate;
     }
+
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId){
