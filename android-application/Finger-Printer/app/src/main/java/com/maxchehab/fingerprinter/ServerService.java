@@ -9,8 +9,10 @@ import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
+import android.provider.Settings;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
+import android.util.Base64;
 import android.util.Log;
 
 import com.google.gson.JsonElement;
@@ -24,9 +26,13 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.math.BigInteger;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.Buffer;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -50,8 +56,6 @@ public class ServerService extends Service {
 
     public ServerService(Context applicationContext){
         super();
-
-
 
         Log.i("ServerService","initialized");
     }
@@ -112,14 +116,20 @@ public class ServerService extends Service {
 
                         String applicationID = null;
                         String uniqueKey = null;
+                        String label = null;
+
+                        String hardwareID =  Settings.Secure.getString(
+                                applicationContext.getContentResolver(),
+                                Settings.Secure.ANDROID_ID);
 
                         switch (rootobj.get("command").getAsString()) {
                             case "knock-knock":
-                                writer.println("{\"sucess\":true,\"message\":\"who is there?\"}");
+                                writer.println("{\"sucess\":true,\"hardwareID\":\"" + hardwareID + "\"}");
                                 break;
                             case "pair":
                                 applicationID = rootobj.get("applicationID").getAsString();
-                                uniqueKey = rootobj.get("uniqueKey").getAsString();
+                                label = rootobj.get("label").getAsString();
+                                uniqueKey = bin2hex(getHash(rootobj.get("salt").getAsString() + hardwareID));
 
                                 if(sharedPreferences.contains(applicationID)){
                                     writer.println("{\"sucess\":false,\"message\":\"already paired\"}");
@@ -127,15 +137,15 @@ public class ServerService extends Service {
                                 }
 
                                 SharedPreferences.Editor editor = sharedPreferences.edit();
-                                editor.putString(applicationID, uniqueKey);
+                                editor.putString(applicationID, "{\"uniqueKey\":\"" + uniqueKey + "\",\"label\":\"" + label + "\"}");
                                 editor.commit();
 
-                                writer.println("{\"sucess\":true,\"message\":\"paired\"}");
+                                writer.println("{\"sucess\":true,\"message\":\"paired\",\"uniqueKey\":\"" + uniqueKey + "\",\"hardwareID\":\"" + hardwareID + "\"}");
                                 break;
                             case "authenticate":
                                 applicationID = rootobj.get("applicationID").getAsString();
                                 if(!sharedPreferences.contains(applicationID)){
-                                    writer.println("{\"sucess\":false,\"message\":\"i do not know that application key\"}");
+                                    writer.println("{\"sucess\":false,\"message\":\"i do not know that applicationID\"}");
                                     break;
                                 }
 
@@ -164,11 +174,38 @@ public class ServerService extends Service {
         }
     }
 
+
+
+    public static byte[] getHash(String password) {
+        MessageDigest digest=null;
+        try {
+            digest = MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+        }
+        digest.reset();
+        return digest.digest(password.getBytes());
+    }
+    static String bin2hex(byte[] data) {
+        return String.format("%0" + (data.length*2) + "X", new BigInteger(1, data));
+    }
+
     public static boolean authenticate(String applicationID){
+
+
+        String data = sharedPreferences.getString(applicationID,null);
+        JsonParser jp = new JsonParser();
+        JsonElement root = jp.parse(data);
+        JsonObject rootobj = root.getAsJsonObject();
+
+        String label = rootobj.get("label").getAsString();
+        String uniqueKey = rootobj.get("uniqueKey").getAsString();
+
         NotificationCompat.Builder mBuilder =
                 new NotificationCompat.Builder(applicationContext)
                         .setSmallIcon(R.drawable.ic_fingerprint)
-                        .setContentTitle(applicationID + " requests your authentication")
+                        .setContentTitle(label + " requests your authentication")
                         .setContentText("Tap to authenticate");
 
         Intent resultIntent = new Intent(applicationContext, FingerprintActivity.class);
@@ -192,11 +229,11 @@ public class ServerService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId){
         super.onStartCommand(intent, flags, startId);
 
+
+
         new ServerInitializer().start();
         this.applicationContext = this;
         sharedPreferences = applicationContext.getSharedPreferences("data", MODE_PRIVATE);
-
-
         startTimer();
         return START_STICKY;
     }

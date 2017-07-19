@@ -42,6 +42,10 @@ public class FingerprintActivity extends AppCompatActivity {
     private FingerprintManager.CryptoObject cryptoObject;
 
 
+    /*
+        TODO Create a way for FingerprintActivity to communicate to ServerService.authenticate().
+     */
+
     Intent serviceIntent;
     private ServerService serverService;
     Context context;
