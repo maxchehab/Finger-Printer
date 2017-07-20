@@ -50,6 +50,8 @@ public class ServerService extends Service {
 
     private static int notificationCounter;
 
+    private static boolean connected = false;
+
     static ServerSocket serverSocket;
 
 
@@ -67,7 +69,7 @@ public class ServerService extends Service {
         public void run(){
             int clientNumber = 0;
             try {
-                serverSocket = new ServerSocket(61597);
+                serverSocket = new ServerSocket(61597,1);
                 try{
                     while(true){
                         new ServerListener(serverSocket.accept(),clientNumber++).start();
@@ -94,11 +96,26 @@ public class ServerService extends Service {
         }
 
         public void run(){
+
+
+
             try{
                 BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
 
-                writer.println("Hello, you have connected!");
+
+                if(connected){
+                    try{
+                        writer.println("{\"sucess\":false,\"message\":\"i am already connected\"}");
+                        socket.close();
+                    }catch(IOException e){
+                        e.printStackTrace();
+                    }
+                    return;
+                }else{
+                    connected = true;
+                    writer.println("{\"sucess\":true,\"message\":\"new connection\"}");
+                }
 
                 while(true){
                     String input = reader.readLine();
@@ -172,6 +189,7 @@ public class ServerService extends Service {
                 e.printStackTrace();
             }finally {
                 try{
+                    connected = false;
                     socket.close();
                 }catch(IOException e){
                     e.printStackTrace();
