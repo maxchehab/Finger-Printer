@@ -97,16 +97,19 @@ public class ServerService extends Service {
 
         public void run(){
 
-
-
             try{
+
+                String hardwareID =  Settings.Secure.getString(
+                        applicationContext.getContentResolver(),
+                        Settings.Secure.ANDROID_ID);
+
                 BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
 
 
                 if(connected){
                     try{
-                        writer.println("{\"sucess\":false,\"message\":\"i am already connected\"}");
+                        writer.println("{\"success\":false,\"message\":\"i am already connected\"}");
                         socket.close();
                     }catch(IOException e){
                         e.printStackTrace();
@@ -114,7 +117,7 @@ public class ServerService extends Service {
                     return;
                 }else{
                     connected = true;
-                    writer.println("{\"sucess\":true,\"message\":\"new connection\"}");
+                    writer.println("{\"success\":true,\"hardwareID\":\"" + hardwareID + "\"}");
                 }
 
                 while(true){
@@ -134,13 +137,11 @@ public class ServerService extends Service {
                         String uniqueKey = null;
                         String label = null;
 
-                        String hardwareID =  Settings.Secure.getString(
-                                applicationContext.getContentResolver(),
-                                Settings.Secure.ANDROID_ID);
+
 
                         switch (rootobj.get("command").getAsString()) {
                             case "knock-knock":
-                                writer.println("{\"sucess\":true,\"hardwareID\":\"" + hardwareID + "\"}");
+                                writer.println("{\"success\":true,\"hardwareID\":\"" + hardwareID + "\"}");
                                 break;
                             case "pair":
                                 applicationID = rootobj.get("applicationID").getAsString();
@@ -148,7 +149,7 @@ public class ServerService extends Service {
                                 uniqueKey = bin2hex(getHash(rootobj.get("salt").getAsString() + hardwareID));
 
                                 if(sharedPreferences.contains(applicationID)){
-                                    writer.println("{\"sucess\":false,\"message\":\"already paired\"}");
+                                    writer.println("{\"success\":false,\"message\":\"already paired\"}");
                                     break;
                                 }
 
@@ -156,19 +157,24 @@ public class ServerService extends Service {
                                 editor.putString(applicationID, "{\"uniqueKey\":\"" + uniqueKey + "\",\"label\":\"" + label + "\"}");
                                 editor.commit();
 
-                                writer.println("{\"sucess\":true,\"message\":\"paired\",\"uniqueKey\":\"" + uniqueKey + "\",\"hardwareID\":\"" + hardwareID + "\"}");
+                                writer.println("{\"success\":true,\"message\":\"paired\",\"uniqueKey\":\"" + uniqueKey + "\",\"hardwareID\":\"" + hardwareID + "\"}");
                                 break;
                             case "authenticate":
                                 applicationID = rootobj.get("applicationID").getAsString();
                                 if(!sharedPreferences.contains(applicationID)){
-                                    writer.println("{\"sucess\":false,\"message\":\"i do not know that applicationID\"}");
+                                    writer.println("{\"success\":false,\"message\":\"i do not know that applicationID\"}");
                                     break;
                                 }
 
-                                boolean response = authenticate(applicationID);
-                                writer.println("{\"sucess\":" + response + ",\"message\":\"authenticating\"}");
+                                String data = sharedPreferences.getString(applicationID,null);
+                                JsonParser jsonParser = new JsonParser();
+                                JsonElement jsonElement = jsonParser.parse(data);
+                                JsonObject jsonObject = jsonElement.getAsJsonObject();
 
-                                Log.i("authenticate-done","TRYING TO KILLL YOUUU");
+                                uniqueKey = jsonObject.get("uniqueKey").getAsString();
+
+                                boolean response = authenticate(applicationID);
+                                writer.println("{\"success\":" + response + ",\"message\":\"authenticating\",\"uniqueKey\":\"" + uniqueKey + "\"}");
 
                                 synchronized (authenticateLock) {
                                     authenticateLock.notify();
@@ -176,13 +182,13 @@ public class ServerService extends Service {
 
                                 break;
                             default:
-                                writer.println("{\"sucess\":false,\"message\":\"i do not understand that command\"}");
+                                writer.println("{\"success\":false,\"message\":\"i do not understand that command\"}");
                         }
                     }catch(IllegalStateException | NullPointerException | JsonSyntaxException e){
 
                         StringWriter errors = new StringWriter();
                         e.printStackTrace(new PrintWriter(errors));
-                        writer.println("{\"sucess\":false,\"message\":\"" + errors.toString() + "\"}");
+                        writer.println("{\"success\":false,\"message\":\"" + errors.toString() + "\"}");
                     }
                 }
             }catch(IOException e){
@@ -224,7 +230,6 @@ public class ServerService extends Service {
         JsonObject rootobj = root.getAsJsonObject();
 
         String label = rootobj.get("label").getAsString();
-        String uniqueKey = rootobj.get("uniqueKey").getAsString();
 
         NotificationCompat.Builder mBuilder =
                 new NotificationCompat.Builder(applicationContext)
