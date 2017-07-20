@@ -9,7 +9,7 @@ import android.support.v4.app.ActivityCompat;
 import android.widget.Toast;
 
 import static com.maxchehab.fingerprinter.FingerprintActivity.authenticate;
-import static com.maxchehab.fingerprinter.FingerprintActivity.sharedLock;
+import static com.maxchehab.fingerprinter.FingerprintActivity.authenticateLock;
 
 /**
  * Created by maxchehab on 7/16/17.
@@ -57,8 +57,8 @@ public class FingerprintHandler extends FingerprintManager.AuthenticationCallbac
                 "Authentication failed.",
                 Toast.LENGTH_LONG).show();
 
-        synchronized (sharedLock) {
-            sharedLock.notify();
+        synchronized (authenticateLock) {
+            authenticateLock.notify();
         }
     }
 
@@ -70,8 +70,8 @@ public class FingerprintHandler extends FingerprintManager.AuthenticationCallbac
                 "Authentication succeeded.",
                 Toast.LENGTH_LONG).show();
 
-        synchronized (sharedLock) {
-            sharedLock.notify();
+        synchronized (authenticateLock) {
+            authenticateLock.notify();
         }
     }
 }

@@ -6,20 +6,16 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.os.Handler;
 import android.os.IBinder;
-import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
-import android.util.Base64;
 import android.util.Log;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
-import com.google.gson.stream.MalformedJsonException;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -29,15 +25,13 @@ import java.io.StringWriter;
 import java.math.BigInteger;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.Buffer;
-import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Timer;
 import java.util.TimerTask;
 
 import static com.maxchehab.fingerprinter.FingerprintActivity.authenticate;
-import static com.maxchehab.fingerprinter.FingerprintActivity.sharedLock;
+import static com.maxchehab.fingerprinter.FingerprintActivity.authenticateLock;
 
 /**
  * Created by maxchehab on 7/17/17.
@@ -156,6 +150,13 @@ public class ServerService extends Service {
 
                                 boolean response = authenticate(applicationID);
                                 writer.println("{\"sucess\":" + response + ",\"message\":\"authenticating\"}");
+
+                                Log.i("authenticate-done","TRYING TO KILLL YOUUU");
+
+                                synchronized (authenticateLock) {
+                                    authenticateLock.notify();
+                                }
+
                                 break;
                             default:
                                 writer.println("{\"sucess\":false,\"message\":\"i do not understand that command\"}");
@@ -229,8 +230,8 @@ public class ServerService extends Service {
         mNotifyMgr.notify(notificationCounter, mBuilder.build());
 
         try{
-            synchronized (sharedLock) {
-                sharedLock.wait();
+            synchronized (authenticateLock) {
+                authenticateLock.wait();
             }
         }catch (InterruptedException e){
             e.printStackTrace();

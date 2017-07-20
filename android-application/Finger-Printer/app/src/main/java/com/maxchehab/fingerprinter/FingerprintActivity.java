@@ -1,6 +1,7 @@
 package com.maxchehab.fingerprinter;
 
 import android.Manifest;
+import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.KeyguardManager;
 import android.content.Context;
@@ -51,7 +52,9 @@ public class FingerprintActivity extends AppCompatActivity {
     Context context;
 
 
-    public final static Object sharedLock = new Object();
+    public final static Object authenticateLock = new Object();
+    public final static Object killLock = new Object();
+
     public static boolean authenticate = false;
 
 
@@ -64,6 +67,14 @@ public class FingerprintActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         context = this;
         setContentView(R.layout.activity_fingerprint);
+
+        new KillListener(this).start();
+
+        Bundle extras = getIntent().getExtras();
+        if(extras != null && extras.containsKey("kill") && extras.getBoolean("key")){
+            Log.i("kill-intent","KILLED");
+            finish();
+        }
 
         serverService = new ServerService(this);
         serviceIntent = new Intent(getContext(), serverService.getClass());
@@ -96,6 +107,26 @@ public class FingerprintActivity extends AppCompatActivity {
             cryptoObject = new FingerprintManager.CryptoObject(cipher);
             FingerprintHandler helper = new FingerprintHandler(this);
             helper.startAuth(fingerprintManager,cryptoObject);
+        }
+    }
+
+    private static class KillListener extends Thread {
+
+        private Activity activity;
+
+        public KillListener(Activity activity){
+            this.activity = activity;
+        }
+
+        public void run(){
+            try{
+                synchronized (authenticateLock) {
+                    authenticateLock.wait();
+                }
+            }catch (InterruptedException e){
+                e.printStackTrace();
+            }
+            activity.finish();
         }
     }
 
