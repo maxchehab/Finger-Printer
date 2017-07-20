@@ -70,12 +70,6 @@ public class FingerprintActivity extends AppCompatActivity {
 
         new KillListener(this).start();
 
-        Bundle extras = getIntent().getExtras();
-        if(extras != null && extras.containsKey("kill") && extras.getBoolean("key")){
-            Log.i("kill-intent","KILLED");
-            finish();
-        }
-
         serverService = new ServerService(this);
         serviceIntent = new Intent(getContext(), serverService.getClass());
 
