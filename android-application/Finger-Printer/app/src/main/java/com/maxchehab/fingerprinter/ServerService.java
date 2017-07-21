@@ -157,11 +157,17 @@ public class ServerService extends Service {
                                     break;
                                 }
 
-                                SharedPreferences.Editor editor = sharedPreferences.edit();
-                                editor.putString(applicationID, "{\"uniqueKey\":\"" + uniqueKey + "\",\"label\":\"" + label + "\"}");
-                                editor.commit();
+                                boolean pairResponse = authenticate(applicationID,"pair",label);
+                                if(pairResponse){
+                                    SharedPreferences.Editor editor = sharedPreferences.edit();
+                                    editor.putString(applicationID, "{\"uniqueKey\":\"" + uniqueKey + "\",\"label\":\"" + label + "\"}");
+                                    editor.commit();
+                                }
+                                writer.println("{\"success\":" + pairResponse + ",\"message\":\"ran pair\",\"uniqueKey\":\"" + uniqueKey + "\",\"hardwareID\":\"" + hardwareID + "\"}");
 
-                                writer.println("{\"success\":true,\"message\":\"paired\",\"uniqueKey\":\"" + uniqueKey + "\",\"hardwareID\":\"" + hardwareID + "\"}");
+                                synchronized (authenticateLock) {
+                                    authenticateLock.notify();
+                                }
                                 break;
                             case "authenticate":
                                 applicationID = rootobj.get("applicationID").getAsString();
@@ -177,8 +183,8 @@ public class ServerService extends Service {
 
                                 uniqueKey = jsonObject.get("uniqueKey").getAsString();
 
-                                boolean response = authenticate(applicationID);
-                                writer.println("{\"success\":" + response + ",\"message\":\"authenticating\",\"uniqueKey\":\"" + uniqueKey + "\"}");
+                                boolean response = authenticate(applicationID, "authenticate",null);
+                                writer.println("{\"success\":" + response + ",\"message\":\"ran authentication\",\"uniqueKey\":\"" + uniqueKey + "\"}");
 
                                 synchronized (authenticateLock) {
                                     authenticateLock.notify();
@@ -225,20 +231,22 @@ public class ServerService extends Service {
         return String.format("%0" + (data.length*2) + "X", new BigInteger(1, data));
     }
 
-    public static boolean authenticate(String applicationID){
+    public static boolean authenticate(String applicationID, String action, String label){
         notificationCounter++;
 
-        String data = sharedPreferences.getString(applicationID,null);
-        JsonParser jp = new JsonParser();
-        JsonElement root = jp.parse(data);
-        JsonObject rootobj = root.getAsJsonObject();
+        if(action == "authenticate"){
+            String data = sharedPreferences.getString(applicationID,null);
+            JsonParser jp = new JsonParser();
+            JsonElement root = jp.parse(data);
+            JsonObject rootobj = root.getAsJsonObject();
+            label = rootobj.get("label").getAsString();
+        }
 
-        String label = rootobj.get("label").getAsString();
 
         NotificationCompat.Builder mBuilder =
                 new NotificationCompat.Builder(applicationContext)
                         .setSmallIcon(R.drawable.ic_fingerprint)
-                        .setContentTitle(label + " requests your authentication")
+                        .setContentTitle(label + " requests your fingerprint to " + action + ".")
                         .setContentText("Tap to authenticate");
 
         Intent resultIntent = new Intent(applicationContext, FingerprintActivity.class);
