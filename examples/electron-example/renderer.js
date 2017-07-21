@@ -29,6 +29,8 @@ function knock_knock(endpoint) {
           data = JSON.parse(data);
           if(data.success){
                add_device(data.deviceName);
+          }else if(data.message == "i am already connected"){
+               knock_knock(endpoint);
           }
           client.destroy();
      });
@@ -45,7 +47,6 @@ function add_device(name){
           selector.innerHTML += "<option value='" + name + "'>" + name + "</option>"
 
      }
-
 
      if (ipAmount === 1) {
           selector.innerHTML = "<option style='color:#4E546D !important' value='null'>Select a device.</option>" + selector.innerHTML;
