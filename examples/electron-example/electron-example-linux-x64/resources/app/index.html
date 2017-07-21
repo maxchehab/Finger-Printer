@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+     <meta charset="UTF-8">
+     <title>Figer Printer :: Electron Example</title>
+
+
+     <link rel='stylesheet prefetch' href='./css/jquery-ui.css'>
+
+     <link rel="stylesheet" href="css/style.css">
+     <script src="./js/jquery.min.js"></script>
+
+
+</head>
+
+<body>
+
+     <div class='login'>
+          <div class='login_title'>
+               <span>Login to your account</span>
+          </div>
+          <div class='login_fields'>
+               <div class='login_fields__user'>
+                    <div class='icon'>
+                         <img src='./img/user_icon_copy.png'>
+                    </div>
+                    <input placeholder='Username' type='text'>
+                    <div class='validation'>
+                         <img src='./img/tick.png'>
+                    </div>
+                    </input>
+               </div>
+               <div class='login_fields__password'>
+                    <div class='icon'>
+                         <img src='./img/lock_icon_copy.png'>
+                    </div>
+                    <input placeholder='Password' type='password'>
+                    <div class='validation'>
+                         <img src='./img/tick.png'>
+                    </div>
+               </div>
+               <div class='login_fields__password'>
+                    <div class='icon'>
+                         <img width="12px" src='./img/ic_small_fingerprint.png'>
+                    </div>
+                    <input placeholder='Password' type='password'>
+                    <div class='validation'>
+                         <img src='./img/tick.png'>
+                    </div>
+               </div>
+               <div class='login_fields__submit'>
+                    <input type='submit' value='Log In'>
+                    <div class='forgot'>
+                         <a href='#'>Forgotten password?</a>
+                    </div>
+               </div>
+          </div>
+          <div class='success'>
+               <h2>Authentication Success</h2>
+               <p>Welcome back</p>
+          </div>
+          <div class='disclaimer'>
+               <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce semper laoreet placerat. Nullam semper auctor justo, rutrum posuere odio vulputate nec.</p>
+          </div>
+     </div>
+     <div class='authent'>
+          <img src='./img/puff.svg'>
+          <p>Authenticating...</p>
+     </div>
+     <script src='./js/jquery.min.js'></script>
+     <script src='./js/jquery-ui.min.js'></script>
+
+     <script src="js/index.js"></script>
+     <script>
+          require('./renderer.js');
+     </script>
+
+</body>
+
+</html>
