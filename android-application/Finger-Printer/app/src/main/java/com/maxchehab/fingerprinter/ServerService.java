@@ -53,6 +53,7 @@ public class ServerService extends Service {
     private static int notificationCounter;
 
     private static boolean connected = false;
+    private static int currentClient = 0;
 
     static ServerSocket serverSocket;
 
@@ -120,6 +121,7 @@ public class ServerService extends Service {
                     }
                     return;
                 }else{
+                    currentClient = clientNumber;
                     connected = true;
                     writer.println("{\"success\":true,\"hardwareID\":\"" + hardwareID + "\",\"deviceName\":\"" + deviceName + "\"}");
                 }
@@ -205,7 +207,9 @@ public class ServerService extends Service {
                 e.printStackTrace();
             }finally {
                 try{
-                    connected = false;
+                    if(currentClient == clientNumber){
+                        connected = false;
+                    }
                     socket.close();
                 }catch(IOException e){
                     e.printStackTrace();
@@ -245,7 +249,7 @@ public class ServerService extends Service {
 
         NotificationCompat.Builder mBuilder =
                 new NotificationCompat.Builder(applicationContext)
-                        .setSmallIcon(R.drawable.ic_fingerprint)
+                        .setSmallIcon(R.mipmap.ic_fingerprint)
                         .setContentTitle(label + " requests your fingerprint to " + action + ".")
                         .setContentText("Tap to authenticate");
 
