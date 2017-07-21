@@ -37,16 +37,6 @@ function createWindow() {
           mainWindow = null
      })
 
-     var arp = require('arp-a');
-
-     arp.table(function(err, entry) {
-          if (!!err) return console.log('arp: ' + err.message);
-          if (!entry) return;
-
-          console.log(entry.ip);
-     });
-
-
 }
 
 // This method will be called when Electron has finished

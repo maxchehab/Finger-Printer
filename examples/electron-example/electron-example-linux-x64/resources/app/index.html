@@ -3,7 +3,7 @@
 
 <head>
      <meta charset="UTF-8">
-     <title>Figer Printer :: Electron Example</title>
+     <title>Finger Printer :: Electron Example</title>
 
 
      <link rel='stylesheet prefetch' href='./css/jquery-ui.css'>
@@ -17,11 +17,11 @@
 <body>
 
      <div class='login'>
-          <div class='login_title'>
-               <span>Login to your account</span>
+          <div class='input_title'>
+               <span>Register your account</span>
           </div>
-          <div class='login_fields'>
-               <div class='login_fields__user'>
+          <div class='input_fields'>
+               <div class='input_fields__user'>
                     <div class='icon'>
                          <img src='./img/user_icon_copy.png'>
                     </div>
@@ -31,7 +31,7 @@
                     </div>
                     </input>
                </div>
-               <div class='login_fields__password'>
+               <div class='input_fields__password'>
                     <div class='icon'>
                          <img src='./img/lock_icon_copy.png'>
                     </div>
@@ -40,28 +40,29 @@
                          <img src='./img/tick.png'>
                     </div>
                </div>
-               <div class='login_fields__password'>
+               <div class='input_fields__fingerprint'>
                     <div class='icon'>
                          <img width="12px" src='./img/ic_small_fingerprint.png'>
                     </div>
-                    <input placeholder='Password' type='password'>
+
+                    <select id="phone-select" name="phone-ip">
+                         <<option>Searching...</option>
+                    </select>
+
                     <div class='validation'>
                          <img src='./img/tick.png'>
                     </div>
                </div>
-               <div class='login_fields__submit'>
-                    <input type='submit' value='Log In'>
+               <div class='input_fields__submit'>
+                    <input type='submit' value='Register'>
                     <div class='forgot'>
-                         <a href='#'>Forgotten password?</a>
+                         <a href='#'>Have an account?</a>
                     </div>
                </div>
           </div>
           <div class='success'>
                <h2>Authentication Success</h2>
                <p>Welcome back</p>
-          </div>
-          <div class='disclaimer'>
-               <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce semper laoreet placerat. Nullam semper auctor justo, rutrum posuere odio vulputate nec.</p>
           </div>
      </div>
      <div class='authent'>
