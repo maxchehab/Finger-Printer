@@ -3,9 +3,11 @@ package com.maxchehab.fingerprinter;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.IBinder;
 import android.provider.Settings;
 import android.support.annotation.Nullable;
@@ -102,6 +104,8 @@ public class ServerService extends Service {
                 String hardwareID =  Settings.Secure.getString(
                         applicationContext.getContentResolver(),
                         Settings.Secure.ANDROID_ID);
+                String deviceName = BluetoothAdapter.getDefaultAdapter().getName();
+
 
                 BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
@@ -117,7 +121,7 @@ public class ServerService extends Service {
                     return;
                 }else{
                     connected = true;
-                    writer.println("{\"success\":true,\"hardwareID\":\"" + hardwareID + "\"}");
+                    writer.println("{\"success\":true,\"hardwareID\":\"" + hardwareID + "\",\"deviceName\":\"" + deviceName + "\"}");
                 }
 
                 while(true){
@@ -141,7 +145,7 @@ public class ServerService extends Service {
 
                         switch (rootobj.get("command").getAsString()) {
                             case "knock-knock":
-                                writer.println("{\"success\":true,\"hardwareID\":\"" + hardwareID + "\"}");
+                                writer.println("{\"success\":true,\"hardwareID\":\"" + hardwareID + "\",\"deviceName\":\"" + deviceName + "\"}");
                                 break;
                             case "pair":
                                 applicationID = rootobj.get("applicationID").getAsString();
