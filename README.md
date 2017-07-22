@@ -86,7 +86,7 @@ Escape character is '^]'.
 {"command":"authenticate","applicationID":"75cc98cb"}
 {"success":false,"message":"authenticating","uniqueKey":"10633D15A87AE1910193FEC20889A2D8E5D5E2CF91715EB97E6BCC7DD998F12A"}
 ```
-An unsuccessful authentiation request (not paired)
+An unsuccessful authentication request (not paired)
 ```bash
 ~$ telnet 10.0.1.31 61597
 Trying 10.0.1.31...
