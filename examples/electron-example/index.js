@@ -2,7 +2,7 @@
 // be executed in the renderer process for that window.
 // All of the Node.js APIs are available in this process.
 
-let APPLICATIONID = "electron-example-2";
+let APPLICATIONID = "electron-example-2.1";
 let LABEL = "Electron Example";
 
 var arp = require('arp-a');
@@ -65,6 +65,11 @@ function pairDevice(endpoint) {
                locateDevices();
                locateDevicesInterval = setInterval(locateDevices, 10000);
                error("Device became unavailable.");
+          }else if(data.command == "pair" && !data.success){
+               console.log("authentication failed");
+               cancelPairAnimation();
+               client.destroy();
+               error("Authentication failed. Please make sure your fingerprint is saved to your device.");
           }
      });
 
