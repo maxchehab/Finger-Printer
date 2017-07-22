@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
+import android.os.Handler;
 import android.os.IBinder;
 import android.provider.Settings;
 import android.support.annotation.Nullable;
@@ -27,10 +28,18 @@ import java.io.StringWriter;
 import java.math.BigInteger;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static com.maxchehab.fingerprinter.FingerprintActivity.authenticate;
 import static com.maxchehab.fingerprinter.FingerprintActivity.authenticateLock;
@@ -57,6 +66,8 @@ public class ServerService extends Service {
 
     static ServerSocket serverSocket;
 
+
+    private static NotificationManager notificationManager = null;
 
     public ServerService(Context applicationContext){
         super();
@@ -94,14 +105,12 @@ public class ServerService extends Service {
         public ServerListener(Socket socket, int clientNumber){
             this.socket = socket;
             this.clientNumber = clientNumber;
-
             Log.i("ServerListener","New connection with client #" + clientNumber + " @ " + socket);
         }
 
         public void run(){
 
             try{
-
                 String hardwareID =  Settings.Secure.getString(
                         applicationContext.getContentResolver(),
                         Settings.Secure.ANDROID_ID);
@@ -123,7 +132,7 @@ public class ServerService extends Service {
                 }else{
                     currentClient = clientNumber;
                     connected = true;
-                    writer.println("{\"success\":true,\"hardwareID\":\"" + hardwareID + "\",\"deviceName\":\"" + deviceName + "\"}");
+                    writer.println("{\"success\":true,\"command\":\"knock-knock\",\"hardwareID\":\"" + hardwareID + "\",\"deviceName\":\"" + deviceName + "\"}");
                 }
 
                 while(true){
@@ -131,7 +140,6 @@ public class ServerService extends Service {
                     if(input == null){
                         break;
                     }
-
                     Log.i("ServerListener","client #" + clientNumber + " responded with the message {" + input + "}");
 
                     try {
@@ -139,7 +147,6 @@ public class ServerService extends Service {
                         JsonElement root = jp.parse(input);
                         JsonObject rootobj = root.getAsJsonObject();
 
-                        String applicationID = null;
                         String uniqueKey = null;
                         String label = null;
 
@@ -147,49 +154,83 @@ public class ServerService extends Service {
 
                         switch (rootobj.get("command").getAsString()) {
                             case "knock-knock":
-                                writer.println("{\"success\":true,\"hardwareID\":\"" + hardwareID + "\",\"deviceName\":\"" + deviceName + "\"}");
+                                writer.println("{\"success\":true,\"command\":\"knock-knock\",\"hardwareID\":\"" + hardwareID + "\",\"deviceName\":\"" + deviceName + "\"}");
                                 break;
                             case "pair":
-                                applicationID = rootobj.get("applicationID").getAsString();
-                                label = rootobj.get("label").getAsString();
+
+                                final String pairApplicationID = rootobj.get("applicationID").getAsString();
+                                final String pairLabel = rootobj.get("label").getAsString();
                                 uniqueKey = bin2hex(getHash(rootobj.get("salt").getAsString() + hardwareID));
 
-                                if(sharedPreferences.contains(applicationID)){
-                                    writer.println("{\"success\":false,\"message\":\"already paired\"}");
+                                if(sharedPreferences.contains(pairApplicationID)){
+                                    writer.println("{\"success\":false,\"command\":\"pair\",\"message\":\"already paired\"}");
                                     break;
                                 }
 
-                                boolean pairResponse = authenticate(applicationID,"pair",label);
-                                if(pairResponse){
-                                    SharedPreferences.Editor editor = sharedPreferences.edit();
-                                    editor.putString(applicationID, "{\"uniqueKey\":\"" + uniqueKey + "\",\"label\":\"" + label + "\"}");
-                                    editor.commit();
-                                }
-                                writer.println("{\"success\":" + pairResponse + ",\"message\":\"ran pair\",\"uniqueKey\":\"" + uniqueKey + "\",\"hardwareID\":\"" + hardwareID + "\"}");
 
-                                synchronized (authenticateLock) {
-                                    authenticateLock.notify();
+                                ExecutorService executor = Executors.newCachedThreadPool();
+                                Callable<Boolean> task = new Callable<Boolean>() {
+                                    public Boolean call() {
+                                        return authenticate(pairApplicationID,"pair",pairLabel);
+                                    }
+                                };
+                                Future<Boolean> future = executor.submit(task);
+                                try {
+                                    boolean pairResponse = future.get(30, TimeUnit.SECONDS);
+                                    if(pairResponse){
+                                        SharedPreferences.Editor editor = sharedPreferences.edit();
+                                        editor.putString(pairApplicationID, "{\"uniqueKey\":\"" + uniqueKey + "\",\"label\":\"" + label + "\"}");
+                                        editor.commit();
+                                        Log.i("pair-command", "Saved applicationID: " + pairApplicationID);
+                                    }
+                                    writer.println("{\"success\":" + pairResponse + ",\"command\":\"pair\",\"message\":\"ran pair\",\"uniqueKey\":\"" + uniqueKey + "\",\"hardwareID\":\"" + hardwareID + "\"}");
+
+                                    synchronized (authenticateLock) {
+                                        authenticateLock.notify();
+                                    }
+                                } catch (TimeoutException | InterruptedException | ExecutionException e) {
+                                    notificationManager.cancelAll();
+                                    socket.close();
+                                } finally {
+                                    future.cancel(true); // may or may not desire this
                                 }
+
                                 break;
                             case "authenticate":
-                                applicationID = rootobj.get("applicationID").getAsString();
-                                if(!sharedPreferences.contains(applicationID)){
-                                    writer.println("{\"success\":false,\"message\":\"i do not know that applicationID\"}");
+                                final String authApplicationID = rootobj.get("applicationID").getAsString();
+                                if(!sharedPreferences.contains(authApplicationID)){
+                                    writer.println("{\"success\":false,\"command\":\"authenticate\",\"message\":\"i do not know that applicationID\"}");
                                     break;
                                 }
 
-                                String data = sharedPreferences.getString(applicationID,null);
+                                String data = sharedPreferences.getString(authApplicationID,null);
                                 JsonParser jsonParser = new JsonParser();
                                 JsonElement jsonElement = jsonParser.parse(data);
                                 JsonObject jsonObject = jsonElement.getAsJsonObject();
 
                                 uniqueKey = jsonObject.get("uniqueKey").getAsString();
 
-                                boolean response = authenticate(applicationID, "authenticate",null);
-                                writer.println("{\"success\":" + response + ",\"message\":\"ran authentication\",\"uniqueKey\":\"" + uniqueKey + "\"}");
+                                final String authLabel = jsonObject.get("label").getAsString();
 
-                                synchronized (authenticateLock) {
-                                    authenticateLock.notify();
+                                ExecutorService authExecutor = Executors.newCachedThreadPool();
+                                Callable<Boolean> authTask = new Callable<Boolean>() {
+                                    public Boolean call() {
+                                        return authenticate(authApplicationID,"authenticate",authLabel);
+                                    }
+                                };
+                                Future<Boolean> authFuture = authExecutor.submit(authTask);
+                                try {
+                                    boolean authResponse = authFuture.get(30, TimeUnit.SECONDS);
+                                    writer.println("{\"success\":" + authResponse + ",\"command\":\"authenticate\",\"message\":\"ran authentication\",\"uniqueKey\":\"" + uniqueKey + "\"}");
+
+                                    synchronized (authenticateLock) {
+                                        authenticateLock.notify();
+                                    }
+                                } catch (TimeoutException | InterruptedException | ExecutionException e) {
+                                    notificationManager.cancelAll();
+                                    socket.close();
+                                } finally {
+                                    authFuture.cancel(true);
                                 }
 
                                 break;
@@ -207,6 +248,10 @@ public class ServerService extends Service {
                 e.printStackTrace();
             }finally {
                 try{
+                    Log.i("ServerService","Client " + clientNumber + " leaving...");
+
+                    notificationManager.cancelAll();
+
                     if(currentClient == clientNumber){
                         connected = false;
                     }
@@ -250,8 +295,9 @@ public class ServerService extends Service {
         NotificationCompat.Builder mBuilder =
                 new NotificationCompat.Builder(applicationContext)
                         .setSmallIcon(R.mipmap.ic_fingerprint)
-                        .setContentTitle(label + " requests your fingerprint to " + action + ".")
-                        .setContentText("Tap to authenticate");
+                        .setContentTitle("Tap to " + action + ".")
+                        .setContentText(label + " requests your fingerprint to " + action + ".");
+
 
         Intent resultIntent = new Intent(applicationContext, FingerprintActivity.class);
         resultIntent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -264,9 +310,8 @@ public class ServerService extends Service {
                         PendingIntent.FLAG_UPDATE_CURRENT
                 );
         mBuilder.setContentIntent(resultPendingIntent);
-        NotificationManager mNotifyMgr = (NotificationManager) applicationContext.getSystemService(NOTIFICATION_SERVICE);
         mBuilder.setAutoCancel(true);
-        mNotifyMgr.notify(notificationCounter, mBuilder.build());
+        notificationManager.notify(notificationCounter, mBuilder.build());
 
         try{
             synchronized (authenticateLock) {
@@ -284,6 +329,7 @@ public class ServerService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId){
         super.onStartCommand(intent, flags, startId);
 
+        this.notificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
 
 
         new ServerInitializer().start();
