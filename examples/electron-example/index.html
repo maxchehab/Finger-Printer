@@ -3,7 +3,7 @@
 
 <head>
      <meta charset="UTF-8">
-     <title>Finger Printer :: Electron Example</title>
+     <title>Electron Example</title>
 
 
      <link rel='stylesheet prefetch' href='./css/jquery-ui.css'>
@@ -16,11 +16,11 @@
 
 <body>
 
-     <div class='login'>
-          <div class='input_title'>
+     <div class='card'>
+          <div class='register input_title'>
                <span>Register your account</span>
           </div>
-          <div class='input_fields'>
+          <div class='register input_fields'>
                <div class='input_fields__user'>
                     <div class='icon'>
                          <img src='./img/user_icon_copy.png'>
@@ -35,7 +35,7 @@
                     <div class='icon'>
                          <img src='./img/lock_icon_copy.png'>
                     </div>
-                    <input placeholder='Password' type='password'>
+                    <input id="register-password" placeholder='Password' type='password'>
                     <div class='validation'>
                          <img src='./img/tick.png'>
                     </div>
@@ -46,7 +46,7 @@
                     </div>
 
                     <select id="phone-select" name="phone-ip">
-                         <<option>Searching...</option>
+                         <option>Searching...</option>
                     </select>
 
                     <div class='validation'>
@@ -54,27 +54,78 @@
                     </div>
                </div>
                <div class='input_fields__submit'>
-                    <input type='submit' value='Register'>
+                    <input id="register" type='submit' value='Register'>
                     <div class='forgot'>
-                         <a href='#'>Have an account?</a>
+                         <a onclick="registerToLogin()">Have an account?</a>
                     </div>
                </div>
           </div>
-          <div class='success'>
-               <h2>Authentication Success</h2>
-               <p>Welcome back</p>
+
+
+          <div class='register success'>
+               <h2>Pairing Success</h2>
+          </div>
+
+          <div class='login input_title'>
+               <span>Login to your account</span>
+          </div>
+          <div class='login input_fields'>
+               <div class='input_fields__user'>
+                    <div class='icon'>
+                         <img src='./img/user_icon_copy.png'>
+                    </div>
+                    <input placeholder='Username' type='text'>
+                    <div class='validation'>
+                         <img src='./img/tick.png'>
+                    </div>
+                    </input>
+               </div>
+               <div class='input_fields__password'>
+                    <div class='icon'>
+                         <img src='./img/lock_icon_copy.png'>
+                    </div>
+                    <input id="register-password" placeholder='Password' type='password'>
+                    <div class='validation'>
+                         <img src='./img/tick.png'>
+                    </div>
+               </div>
+               <div class='input_fields__fingerprint'>
+                    <div class='icon'>
+                         <img width="12px" src='./img/ic_small_fingerprint.png'>
+                    </div>
+
+                    <select id="phone-select" name="phone-ip">
+                         <option>Searching...</option>
+                    </select>
+
+                    <div class='validation'>
+                         <img src='./img/tick.png'>
+                    </div>
+               </div>
+               <div class='input_fields__submit'>
+                    <input id="login" type='submit' value='login'>
+                    <div class='forgot'>
+                         <a onclick="loginToRegister()">Don't have an account?</a>
+                    </div>
+               </div>
+          </div>
+
+
+          <div class='login success'>
+               <h2>Login Success</h2>
           </div>
      </div>
-     <div class='authent'>
+
+     <div class='pair'>
           <img src='./img/puff.svg'>
-          <p>Authenticating...</p>
+          <p>Pairing...</p>
      </div>
      <script src='./js/jquery.min.js'></script>
      <script src='./js/jquery-ui.min.js'></script>
 
-     <script src="js/index.js"></script>
+     <script src="js/animations.js"></script>
      <script>
-          require('./renderer.js');
+          require('./index.js');
      </script>
 
 </body>
