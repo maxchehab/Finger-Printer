@@ -25,6 +25,7 @@ import com.google.gson.JsonSyntaxException;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.math.BigInteger;
@@ -100,6 +101,73 @@ public class ServerService extends Service {
         }
     }
 
+    private static class AuthenticateHandler extends Thread{
+
+        private String action;
+        private String authApplicationID;
+        private String authLabel;
+        private String uniqueKey;
+
+        private Socket socket;
+        private PrintWriter writer;
+
+        public AuthenticateHandler(String action,String authApplicationID, String authLabel, String uniqueKey, Socket socket, PrintWriter printWriter){
+            this.action = action;
+            this.authApplicationID = authApplicationID;
+            this.authLabel = authLabel;
+            this.uniqueKey = uniqueKey;
+            this.socket = socket;
+            this.writer = printWriter;
+
+
+        }
+
+
+        public void run(){
+
+            final String hardwareID =  Settings.Secure.getString(
+                    applicationContext.getContentResolver(),
+                    Settings.Secure.ANDROID_ID);
+            ExecutorService authExecutor = Executors.newCachedThreadPool();
+            Callable<Boolean> authTask = new Callable<Boolean>() {
+                public Boolean call() {
+                    return authenticate(authApplicationID,action,authLabel);
+                }
+            };
+            Future<Boolean> authFuture = authExecutor.submit(authTask);
+            try {
+                boolean authResponse = authFuture.get(30, TimeUnit.SECONDS);
+
+                if(action == "pair"){
+                    if(authResponse){
+                        SharedPreferences.Editor editor = sharedPreferences.edit();
+                        editor.putString(authApplicationID, "{\"uniqueKey\":\"" + uniqueKey + "\",\"label\":\"" + authLabel + "\"}");
+                        editor.commit();
+                        Log.i("pair-command", "Saved applicationID: " + authApplicationID);
+                    }
+                    writer.println("{\"success\":" + authResponse + ",\"command\":\"pair\",\"message\":\"ran pair\",\"uniqueKey\":\"" + uniqueKey + "\",\"hardwareID\":\"" + hardwareID + "\"}");
+
+                }else{
+                    writer.println("{\"success\":" + authResponse + ",\"command\":\"authenticate\",\"message\":\"ran authentication\",\"uniqueKey\":\"" + uniqueKey + "\"}");
+                }
+
+
+                synchronized (authenticateLock) {
+                    authenticateLock.notify();
+                }
+            } catch (TimeoutException | InterruptedException | ExecutionException e) {
+                notificationManager.cancelAll();
+                try{
+                    socket.close();
+                }catch(IOException ex){
+                    ex.printStackTrace();
+                }
+            } finally {
+                authFuture.cancel(true);
+            }
+        }
+    }
+
     private static class ServerListener extends Thread{
         private Socket socket;
         private int clientNumber;
@@ -169,33 +237,7 @@ public class ServerService extends Service {
                                     break;
                                 }
 
-
-                                ExecutorService executor = Executors.newCachedThreadPool();
-                                Callable<Boolean> task = new Callable<Boolean>() {
-                                    public Boolean call() {
-                                        return authenticate(pairApplicationID,"pair",pairLabel);
-                                    }
-                                };
-                                Future<Boolean> future = executor.submit(task);
-                                try {
-                                    boolean pairResponse = future.get(30, TimeUnit.SECONDS);
-                                    if(pairResponse){
-                                        SharedPreferences.Editor editor = sharedPreferences.edit();
-                                        editor.putString(pairApplicationID, "{\"uniqueKey\":\"" + uniqueKey + "\",\"label\":\"" + label + "\"}");
-                                        editor.commit();
-                                        Log.i("pair-command", "Saved applicationID: " + pairApplicationID);
-                                    }
-                                    writer.println("{\"success\":" + pairResponse + ",\"command\":\"pair\",\"message\":\"ran pair\",\"uniqueKey\":\"" + uniqueKey + "\",\"hardwareID\":\"" + hardwareID + "\"}");
-
-                                    synchronized (authenticateLock) {
-                                        authenticateLock.notify();
-                                    }
-                                } catch (TimeoutException | InterruptedException | ExecutionException e) {
-                                    notificationManager.cancelAll();
-                                    socket.close();
-                                } finally {
-                                    future.cancel(true); // may or may not desire this
-                                }
+                                new AuthenticateHandler("pair",pairApplicationID,pairLabel,uniqueKey,socket,writer).start();
 
                                 break;
                             case "authenticate":
@@ -214,26 +256,7 @@ public class ServerService extends Service {
 
                                 final String authLabel = jsonObject.get("label").getAsString();
 
-                                ExecutorService authExecutor = Executors.newCachedThreadPool();
-                                Callable<Boolean> authTask = new Callable<Boolean>() {
-                                    public Boolean call() {
-                                        return authenticate(authApplicationID,"authenticate",authLabel);
-                                    }
-                                };
-                                Future<Boolean> authFuture = authExecutor.submit(authTask);
-                                try {
-                                    boolean authResponse = authFuture.get(30, TimeUnit.SECONDS);
-                                    writer.println("{\"success\":" + authResponse + ",\"command\":\"authenticate\",\"message\":\"ran authentication\",\"uniqueKey\":\"" + uniqueKey + "\"}");
-
-                                    synchronized (authenticateLock) {
-                                        authenticateLock.notify();
-                                    }
-                                } catch (TimeoutException | InterruptedException | ExecutionException e) {
-                                    notificationManager.cancelAll();
-                                    socket.close();
-                                } finally {
-                                    authFuture.cancel(true);
-                                }
+                                new AuthenticateHandler("authenticate",authApplicationID,authLabel,uniqueKey,socket,writer).start();
 
                                 break;
                             default:
@@ -299,6 +322,7 @@ public class ServerService extends Service {
                         .setSmallIcon(R.mipmap.ic_fingerprint)
                         .setContentTitle("Tap to " + action + ".")
                         .setLights(Color.GREEN,500,500)
+                        .setOngoing(true)
                         .setOnlyAlertOnce(true)
                         .setDefaults(Notification.DEFAULT_ALL)
                         .setPriority(Notification.PRIORITY_HIGH)
