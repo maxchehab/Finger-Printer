@@ -8,16 +8,13 @@ let LABEL = "Electron Example";
 var arp = require('arp-a');
 var net = require('net');
 
+
 var selector = document.getElementById("phone-select");
 
-var devicesAvailable = [{
-     endpoint: "10.1.32.1",
-     hardwareID: "asfasdf",
-     deviceName: "Max's iPhone"
-}];
+var devicesAvailable = [];
 
 locateDevices();
-var locateDevicesInterval = setInterval(locateDevices, 2000);
+var locateDevicesInterval = setInterval(locateDevices, 10000);
 
 
 
@@ -33,7 +30,7 @@ $('#login-button').click(function() {
      authenticateDevice($('#phone-select').find(":selected").val());
 });
 
-function authenticateDevice(endpoint) {
+function authenticateDevice(endpoint){
 
 }
 
@@ -75,9 +72,9 @@ function pairDevice(endpoint) {
                cancelTransitionAnimation();
                client.destroy();
                locateDevices();
-               locateDevicesInterval = setInterval(locateDevices, 2000);
+               locateDevicesInterval = setInterval(locateDevices, 10000);
                error("Device became unavailable.");
-          } else if (data.command == "pair" && !data.success) {
+          }else if(data.command == "pair" && !data.success){
                console.log("authentication failed");
                cancelTransitionAnimation();
                client.destroy();
@@ -87,11 +84,11 @@ function pairDevice(endpoint) {
 
      client.on('close', function() {
           console.log(endpoint + ' : Connection closed');
-          if (!pairSuccess) {
+          if(!pairSuccess){
                error("Device has timed out.");
                cancelTransitionAnimation();
                locateDevices();
-               locateDevicesInterval = setInterval(locateDevices, 2000);
+               locateDevicesInterval = setInterval(locateDevices, 10000);
           }
      });
 
@@ -173,31 +170,22 @@ function removeDevice(endpoint) {
 }
 
 function updateDevices() {
-     var value = $(selector).val();
-     console.log("value " + value);
      selector.innerHTML = "";
      for (var i = 0; i < devicesAvailable.length; i++) {
+          if (i === 1) {
+               selector.innerHTML = "<option style='color:#4E546D !important' value='null'>Select a device.</option>" + selector.innerHTML;
+               selector.style.color = "#4E546D";
+          }
+          console.log(devicesAvailable[i].endpoint)
           selector.innerHTML += "<option value='" + devicesAvailable[i].endpoint + "'>" + devicesAvailable[i].deviceName + "</option>"
      }
      if (devicesAvailable.length === 0) {
           selector.innerHTML = "<option value='null'>Searching...</option>";
+
           hidePhoneTick();
-     } else if (devicesAvailable.length === 1) {
+     }else{
           showPhoneTick();
      }
-     if(devicesAvailable.length > 1){
-          selector.innerHTML = "<option value='device' style='color:#4E546D  !important'>Select a device.</option>" + selector.innerHTML;
-          if ($("#phone-select option[value='" + value + "']").length > 0 && $(selector).val != null) {
-               $(selector).val(value);
-               console.log("HAS VALUE");
-          } else {
-               $(selector).val('device');
-               selector.style.color = "#4E546D";
-               hidePhoneTick();
-          }
-     }
-
-
 
 }
 

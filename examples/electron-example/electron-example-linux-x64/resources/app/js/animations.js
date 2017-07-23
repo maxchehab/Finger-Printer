@@ -135,7 +135,7 @@ $('.tab').click(function() {
 $('#phone-select').css('color', '#DC6180')
 $('#phone-select').change(function() {
      var current = $('#phone-select').val();
-     if (current != 'null' && current != 'device') {
+     if (current != 'null') {
           $('#phone-select').css('color', '#DC6180');
           $(this).next().animate({
                'opacity': '1',
@@ -152,7 +152,7 @@ $('#phone-select').change(function() {
 
 function showPhoneTick() {
      $('#phone-select').css('color', '#DC6180');
-     $('#phone-select').next().stop().animate({
+     $('#phone-select').next().animate({
           'opacity': '1',
           'right': '30'
      }, 200)
@@ -160,13 +160,13 @@ function showPhoneTick() {
 
 function hidePhoneTick() {
      $('#phone-select').css('color', '#4E546D');
-     $('#phone-select').next().stop().animate({
+     $('#phone-select').next().animate({
           'opacity': '0',
           'right': '20'
      }, 200)
 }
 
-$("select").on({
+$("#phone-select").on({
      "change": function() {
           $(this).blur();
      },
