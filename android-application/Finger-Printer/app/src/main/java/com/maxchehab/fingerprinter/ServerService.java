@@ -275,9 +275,9 @@ public class ServerService extends Service {
                 try{
                     Log.i("ServerService","Client " + clientNumber + " leaving...");
 
-                    notificationManager.cancelAll();
 
                     if(currentClient == clientNumber){
+                        notificationManager.cancelAll();
                         connected = false;
                     }
                     socket.close();
