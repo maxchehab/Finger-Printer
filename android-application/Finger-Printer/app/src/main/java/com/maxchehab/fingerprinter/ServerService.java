@@ -1,5 +1,6 @@
 package com.maxchehab.fingerprinter;
 
+import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -7,6 +8,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
@@ -296,6 +298,10 @@ public class ServerService extends Service {
                 new NotificationCompat.Builder(applicationContext)
                         .setSmallIcon(R.mipmap.ic_fingerprint)
                         .setContentTitle("Tap to " + action + ".")
+                        .setLights(Color.GREEN,500,500)
+                        .setOnlyAlertOnce(true)
+                        .setDefaults(Notification.DEFAULT_ALL)
+                        .setPriority(Notification.PRIORITY_HIGH)
                         .setContentText(label + " requests your fingerprint to " + action + ".");
 
 
