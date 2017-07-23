@@ -1,14 +1,14 @@
-function startPairAnimation() {
+function startTransitionAnimation() {
      $('.card').addClass('test');
      $('.card').addClass('testtwo');
-     $(".pair").show().animate({
+     $(".authenticate").show().animate({
           right: -320
      }, {
           easing: 'easeOutQuint',
           duration: 600,
           queue: false
      });
-     $(".pair").animate({
+     $(".authenticate").animate({
           opacity: 1
      }, {
           duration: 200,
@@ -16,17 +16,17 @@ function startPairAnimation() {
      }).addClass('visible');
 };
 
-function cancelPairAnimation() {
+function cancelTransitionAnimation() {
      $('.card').removeClass('test');
      $('.card').removeClass('testtwo');
-     $(".pair").hide().animate({
+     $(".authenticate").hide().animate({
           right: 320
      }, {
           easing: 'easeOutQuint',
           duration: 600,
           queue: false
      });
-     $(".pair").animate({
+     $(".authenticate").animate({
           opacity: 0
      }, {
           duration: 200,
@@ -35,14 +35,14 @@ function cancelPairAnimation() {
 }
 
 function stopPairAnimation() {
-     $(".pair").show().animate({
+     $(".authenticate").show().animate({
           right: 90
      }, {
           easing: 'easeOutQuint',
           duration: 600,
           queue: false
      });
-     $(".pair").animate({
+     $(".authenticate").animate({
           opacity: 0
      }, {
           duration: 200,
@@ -52,6 +52,26 @@ function stopPairAnimation() {
      $('.card').removeClass('test');
      $('.register').fadeOut(123);
      $('.register.success').fadeIn();
+}
+
+function stopAuthenticateAnimation() {
+     $(".authenticate").show().animate({
+          right: 90
+     }, {
+          easing: 'easeOutQuint',
+          duration: 600,
+          queue: false
+     });
+     $(".authenticate").animate({
+          opacity: 0
+     }, {
+          duration: 200,
+          queue: false
+     }).addClass('visible');
+     $('.card').removeClass('testtwo');
+     $('.card').removeClass('test');
+     $('.login').fadeOut(123);
+     $('.login.success').fadeIn();
 }
 
 function registerToLogin() {

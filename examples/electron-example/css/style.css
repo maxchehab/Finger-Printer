@@ -26,7 +26,7 @@ body ::-webkit-input-placeholder {
      color: #4E546D;
 }
 
-body .pair {
+body .authenticate {
      display: none;
      background: #35394a;
      /* Old browsers */
@@ -57,7 +57,7 @@ body .pair {
      opacity: 0;
 }
 
-body .pair p {
+body .authenticate p {
      text-align: center;
      color: white;
 }

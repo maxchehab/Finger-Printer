@@ -2,7 +2,7 @@
 // be executed in the renderer process for that window.
 // All of the Node.js APIs are available in this process.
 
-let APPLICATIONID = "electron-example-2.1";
+let APPLICATIONID = saltGenerator();
 let LABEL = "Electron Example";
 
 var arp = require('arp-a');
@@ -18,12 +18,21 @@ var locateDevicesInterval = setInterval(locateDevices, 10000);
 
 
 
-$('#register').click(function() {
+$('#register-button').click(function() {
      clearInterval(locateDevicesInterval);
-     startPairAnimation();
+     startTransitionAnimation();
      pairDevice($('#phone-select').find(":selected").val());
-
 });
+
+$('#login-button').click(function() {
+     clearInterval(locateDevicesInterval);
+     startTransitionAnimation();
+     authenticateDevice($('#phone-select').find(":selected").val());
+});
+
+function authenticateDevice(endpoint){
+
+}
 
 function pairDevice(endpoint) {
      console.log("pairing : " + endpoint);
@@ -55,19 +64,19 @@ function pairDevice(endpoint) {
           } else if (data.command == "pair" && data.message == "already paired") {
                error("Device is already paired with this application. Maybe you want to login?");
                console.log("already paired");
-               cancelPairAnimation();
+               cancelTransitionAnimation();
                client.destroy();
 
           } else if (data.message == "i am already connected") {
                console.log("already connected")
-               cancelPairAnimation();
+               cancelTransitionAnimation();
                client.destroy();
                locateDevices();
                locateDevicesInterval = setInterval(locateDevices, 10000);
                error("Device became unavailable.");
           }else if(data.command == "pair" && !data.success){
                console.log("authentication failed");
-               cancelPairAnimation();
+               cancelTransitionAnimation();
                client.destroy();
                error("Authentication failed. Please make sure your fingerprint is saved to your device.");
           }
@@ -77,7 +86,7 @@ function pairDevice(endpoint) {
           console.log(endpoint + ' : Connection closed');
           if(!pairSuccess){
                error("Device has timed out.");
-               cancelPairAnimation();
+               cancelTransitionAnimation();
                locateDevices();
                locateDevicesInterval = setInterval(locateDevices, 10000);
           }
@@ -172,6 +181,7 @@ function updateDevices() {
      }
      if (devicesAvailable.length === 0) {
           selector.innerHTML = "<option value='null'>Searching...</option>";
+
           hidePhoneTick();
      }else{
           showPhoneTick();
