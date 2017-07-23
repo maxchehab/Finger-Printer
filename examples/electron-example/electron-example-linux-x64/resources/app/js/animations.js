@@ -68,6 +68,7 @@ function logoutAnimation(){
           $('.card').removeClass('test');
           $('*').stop();
      }, 800);
+     cancelTransitionAnimation();
 }
 
 function stopAuthenticateAnimation() {
