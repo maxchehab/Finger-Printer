@@ -34,9 +34,9 @@ function cancelTransitionAnimation() {
      }).removeClass('visible');
 }
 
-function stopPairAnimation() {
+function successAnimation() {
      $(".authenticate").show().animate({
-          right: 90
+          right: 320
      }, {
           easing: 'easeOutQuint',
           duration: 600,
@@ -47,11 +47,27 @@ function stopPairAnimation() {
      }, {
           duration: 200,
           queue: false
-     }).addClass('visible');
+     }).removeClass('visible');
+
      $('.card').removeClass('testtwo');
      $('.card').removeClass('test');
-     $('.register').fadeOut(123);
-     $('.register.success').fadeIn();
+     $('.card').removeClass('register');
+     $('.card').removeClass('login');
+     $('.card').addClass('success');
+
+}
+
+function logoutAnimation(){
+     $('.card').addClass('test');
+     setTimeout(function() {
+          $('.card').removeClass('success');
+          $('.card').addClass('login');
+     }, 400);
+
+     setTimeout(function() {
+          $('.card').removeClass('test');
+          $('*').stop();
+     }, 800);
 }
 
 function stopAuthenticateAnimation() {
@@ -77,8 +93,9 @@ function stopAuthenticateAnimation() {
 function registerToLogin() {
      $('.card').addClass('test');
      setTimeout(function() {
-          $('.register').fadeOut(0);
-          $('.login').fadeIn(123);
+          $('.card').removeClass('register');
+          $('.card').addClass('login');
+
      }, 400);
 
      setTimeout(function() {
@@ -90,8 +107,8 @@ function registerToLogin() {
 function loginToRegister() {
      $('.card').addClass('test');
      setTimeout(function() {
-          $('.login').fadeOut(0);
-          $('.register').fadeIn(123);
+          $('.card').addClass('register');
+          $('.card').removeClass('login');
      }, 400);
 
      setTimeout(function() {
@@ -135,7 +152,7 @@ $('.tab').click(function() {
 $('#phone-select').css('color', '#DC6180')
 $('#phone-select').change(function() {
      var current = $('#phone-select').val();
-     if (current != 'null') {
+     if (current != 'null' && current != 'device') {
           $('#phone-select').css('color', '#DC6180');
           $(this).next().animate({
                'opacity': '1',
@@ -152,7 +169,7 @@ $('#phone-select').change(function() {
 
 function showPhoneTick() {
      $('#phone-select').css('color', '#DC6180');
-     $('#phone-select').next().animate({
+     $('#phone-select').next().stop().animate({
           'opacity': '1',
           'right': '30'
      }, 200)
@@ -160,13 +177,13 @@ function showPhoneTick() {
 
 function hidePhoneTick() {
      $('#phone-select').css('color', '#4E546D');
-     $('#phone-select').next().animate({
+     $('#phone-select').next().stop().animate({
           'opacity': '0',
           'right': '20'
      }, 200)
 }
 
-$("#phone-select").on({
+$("select").on({
      "change": function() {
           $(this).blur();
      },

@@ -2,7 +2,7 @@
 // be executed in the renderer process for that window.
 // All of the Node.js APIs are available in this process.
 
-let APPLICATIONID = saltGenerator();
+let APPLICATIONID = "electron-example-3.0";
 let LABEL = "Electron Example";
 
 var arp = require('arp-a');
@@ -10,11 +10,7 @@ var net = require('net');
 
 var selector = document.getElementById("phone-select");
 
-var devicesAvailable = [{
-     endpoint: "10.1.32.1",
-     hardwareID: "asfasdf",
-     deviceName: "Max's iPhone"
-}];
+var devicesAvailable = [];
 
 locateDevices();
 var locateDevicesInterval = setInterval(locateDevices, 2000);
@@ -33,8 +29,84 @@ $('#login-button').click(function() {
      authenticateDevice($('#phone-select').find(":selected").val());
 });
 
-function authenticateDevice(endpoint) {
+$('#logout').click(function() {
+     //devicesAvailable = [];
+     logoutAnimation();
+     //locateDevices();
+     //var locateDevicesInterval = setInterval(locateDevices, 2000);
+})
 
+
+
+
+function authenticateDevice(endpoint) {
+     console.log("authenticating : " + endpoint);
+
+     var client = new net.Socket();
+     var authenticateSuccess = false;
+
+
+     client.setTimeout(30000);
+     client.on('timeout', () => {
+          client.destroy();
+     });
+     client.connect(61597, endpoint, function() {
+          console.log('Connected');
+     });
+
+     client.on('data', function(data) {
+          console.log(endpoint + ' : Received : ' + data);
+          data = JSON.parse(data);
+
+          if (data.command == "knock-knock" && data.success) {
+               var command = JSON.stringify(new authenticateCommand(APPLICATIONID));
+               console.log("authenticating : " + command);
+               client.write(command + "\n");
+          } else if (data.command == "authenticate" && data.success) {
+               successAnimation();
+               clearInterval(locateDevicesInterval);
+               authenticateSuccess = true;
+               client.destroy();
+          } else if (data.command == "authenticate" && data.message == "i do not know that applicationID") {
+               error("Device does not know this application. Maybe you want to register?");
+               console.log("not recoginized");
+               cancelTransitionAnimation();
+               client.destroy();
+
+          } else if (data.message == "i am already connected") {
+               console.log("already connected")
+               cancelTransitionAnimation();
+               client.destroy();
+               locateDevices();
+               locateDevicesInterval = setInterval(locateDevices, 2000);
+               error("Device became unavailable.");
+          } else if (data.command == "authenticate" && !data.success) {
+               console.log("authentication failed");
+               cancelTransitionAnimation();
+               client.destroy();
+               devicesAvailable = [];
+
+               error("Authentication failed. Please make sure your fingerprint is saved to your device.");
+          }
+     });
+
+     client.on('close', function() {
+          console.log(endpoint + ' : Connection closed');
+          if (!authenticateSuccess) {
+               error("Device has timed out.");
+               cancelTransitionAnimation();
+               locateDevices();
+               locateDevicesInterval = setInterval(locateDevices, 2000);
+          }
+     });
+
+     client.on('error', function(err) {
+          console.log(endpoint + ' : ' + err);
+          error("Device has timed out.");
+          cancelTransitionAnimation();
+          locateDevices();
+          locateDevicesInterval = setInterval(locateDevices, 2000);
+     });
 }
 
 function pairDevice(endpoint) {
@@ -61,7 +133,8 @@ function pairDevice(endpoint) {
                console.log("pairing : " + command);
                client.write(command + "\n");
           } else if (data.command == "pair" && data.success) {
-               stopPairAnimation();
+               successAnimation();
+               clearInterval(locateDevicesInterval);
                pairSuccess = true;
                client.destroy();
           } else if (data.command == "pair" && data.message == "already paired") {
@@ -96,8 +169,11 @@ function pairDevice(endpoint) {
      });
 
      client.on('error', function(err) {
-          removeDevice(endpoint);
           console.log(endpoint + ' : ' + err);
+          error("Device has timed out.");
+          cancelTransitionAnimation();
+          locateDevices();
+          locateDevicesInterval = setInterval(locateDevices, 2000);
      });
 }
 
@@ -185,7 +261,7 @@ function updateDevices() {
      } else if (devicesAvailable.length === 1) {
           showPhoneTick();
      }
-     if(devicesAvailable.length > 1){
+     if (devicesAvailable.length > 1) {
           selector.innerHTML = "<option value='device' style='color:#4E546D  !important'>Select a device.</option>" + selector.innerHTML;
           if ($("#phone-select option[value='" + value + "']").length > 0 && $(selector).val != null) {
                $(selector).val(value);
@@ -206,6 +282,11 @@ function pairCommand(applicationID, label) {
      this.command = "pair";
      this.label = label;
      this.salt = saltGenerator();
+}
+
+function authenticateCommand(applicationID) {
+     this.applicationID = applicationID;
+     this.command = "authenticate";
 }
 
 function saltGenerator() {

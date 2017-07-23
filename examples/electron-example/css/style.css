@@ -63,13 +63,23 @@ body .authenticate p {
 }
 
 body .success {
-     display: none;
      color: #d5d8e2;
 }
 
-body .login{
+.card.login .register, .card.login .success{
+     z-index: -999;
      display: none;
 }
+.card.register .login, .card.register .success{
+     z-index: -999;
+     display: none;
+}
+
+.card.success .register, .card.success .register, .card.success .login, .card.success .input_fields{
+     z-index: -999;
+     display: none;
+}
+
 
 body .success p {
      font-size: 14px;
@@ -226,11 +236,11 @@ body .input_fields__submit .forgot {
      float: right;
      font-size: 10px;
      margin-top: 11px;
-     text-decoration: underline;
 }
 
-body .input_fields__submit .forgot a {
+body .input_fields__submit .forgot a, .success a {
      color: #606479;
+     text-decoration: underline;
      cursor: pointer;
 }
 

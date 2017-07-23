@@ -16,11 +16,13 @@
 
 <body>
 
-     <div class='card'>
-          <div class='register input_title'>
-               <span>Register your account</span>
+     <div class='card register'>
+          <div class='input_title'>
+               <span class="register">Register your account</span>
+               <span class="login">Login to your account</span>
+
           </div>
-          <div class='register input_fields'>
+          <div class='input_fields'>
                <div class='input_fields__user'>
                     <div class='icon'>
                          <img src='./img/user_icon_copy.png'>
@@ -54,66 +56,22 @@
                     </div>
                </div>
                <div class='input_fields__submit'>
-                    <input id="register-button" type='submit' value='Register'>
+                    <input class="register" id="register-button" type='submit' value='Register'>
+                    <input class="login" id="login-button" type='submit' value='Login'>
+
                     <div class='forgot'>
-                         <a onclick="registerToLogin()">Have an account?</a>
+                         <a class="register" onclick="registerToLogin()">Have an account?</a>
+                         <a class="login" onclick="loginToRegister()">Need an account?</a>
                     </div>
                </div>
           </div>
 
 
-          <div class='register success'>
-               <h2>Pairing Success</h2>
+          <div class='success'>
+               <h2>Success</h2>
+               <a id="logout" class="forgot">Logout</a>
           </div>
 
-          <div class='login input_title'>
-               <span>Login to your account</span>
-          </div>
-          <div class='login input_fields'>
-               <div class='input_fields__user'>
-                    <div class='icon'>
-                         <img src='./img/user_icon_copy.png'>
-                    </div>
-                    <input placeholder='Username' type='text'>
-                    <div class='validation'>
-                         <img src='./img/tick.png'>
-                    </div>
-                    </input>
-               </div>
-               <div class='input_fields__password'>
-                    <div class='icon'>
-                         <img src='./img/lock_icon_copy.png'>
-                    </div>
-                    <input id="register-password" placeholder='Password' type='password'>
-                    <div class='validation'>
-                         <img src='./img/tick.png'>
-                    </div>
-               </div>
-               <div class='input_fields__fingerprint'>
-                    <div class='icon'>
-                         <img width="12px" src='./img/ic_small_fingerprint.png'>
-                    </div>
-
-                    <select id="phone-select" name="phone-ip">
-                         <option>Searching...</option>
-                    </select>
-
-                    <div class='validation'>
-                         <img src='./img/tick.png'>
-                    </div>
-               </div>
-               <div class='input_fields__submit'>
-                    <input id="login-button" type='submit' value='login'>
-                    <div class='forgot'>
-                         <a onclick="loginToRegister()">Don't have an account?</a>
-                    </div>
-               </div>
-          </div>
-
-
-          <div class='login success'>
-               <h2>Login Success</h2>
-          </div>
      </div>
 
      <div class='authenticate'>
