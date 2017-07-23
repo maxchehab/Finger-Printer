@@ -2,7 +2,7 @@
 // be executed in the renderer process for that window.
 // All of the Node.js APIs are available in this process.
 
-let APPLICATIONID = "electron-example-3.0";
+let APPLICATIONID = "electron-example-3.1";
 let LABEL = "Electron Example";
 
 var arp = require('arp-a');
