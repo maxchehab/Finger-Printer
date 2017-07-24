@@ -42,7 +42,6 @@ public class FingerprintActivity extends AppCompatActivity {
     private Cipher cipher;
     private FingerprintManager.CryptoObject cryptoObject;
 
-    private static boolean kill = false;
 
 
     /*
@@ -55,7 +54,6 @@ public class FingerprintActivity extends AppCompatActivity {
 
 
     public final static Object authenticateLock = new Object();
-    public final static Object killLock = new Object();
 
     public static boolean authenticate = false;
 
@@ -123,7 +121,6 @@ public class FingerprintActivity extends AppCompatActivity {
                 e.printStackTrace();
             }
             activity.finish();
-            kill = true;
         }
     }
 
@@ -144,14 +141,6 @@ public class FingerprintActivity extends AppCompatActivity {
     protected void onDestroy(){
         Log.i("MAINACT", "onDestroy()");
         super.onDestroy();
-    }
-
-    @Override
-    protected  void onResume(){
-        if(kill){
-            this.finish();
-        }
-        super.onResume();
     }
 
 
