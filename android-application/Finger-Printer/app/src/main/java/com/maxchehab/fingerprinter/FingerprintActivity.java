@@ -42,6 +42,8 @@ public class FingerprintActivity extends AppCompatActivity {
     private Cipher cipher;
     private FingerprintManager.CryptoObject cryptoObject;
 
+    private static boolean kill = false;
+
 
     /*
         TODO Create a way for FingerprintActivity to communicate to ServerService.authenticate().
@@ -121,6 +123,7 @@ public class FingerprintActivity extends AppCompatActivity {
                 e.printStackTrace();
             }
             activity.finish();
+            kill = true;
         }
     }
 
@@ -141,6 +144,14 @@ public class FingerprintActivity extends AppCompatActivity {
     protected void onDestroy(){
         Log.i("MAINACT", "onDestroy()");
         super.onDestroy();
+    }
+
+    @Override
+    protected  void onResume(){
+        if(kill){
+            this.finish();
+        }
+        super.onResume();
     }
 
 
