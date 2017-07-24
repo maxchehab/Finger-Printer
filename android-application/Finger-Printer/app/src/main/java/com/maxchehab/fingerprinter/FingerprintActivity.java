@@ -139,7 +139,6 @@ public class FingerprintActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy(){
-        stopService(serviceIntent);
         Log.i("MAINACT", "onDestroy()");
         super.onDestroy();
     }
