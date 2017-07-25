@@ -7,6 +7,12 @@
     android:layout_height="match_parent"
     tools:context="com.maxchehab.fingerprinter.MainActivity">
 
+    <LinearLayout android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:layout_width="0px"
+        android:layout_height="0px" >
+        <requestFocus />
+    </LinearLayout>
     <SearchView
         android:id="@+id/searchView"
         android:layout_width="match_parent"
@@ -16,7 +22,6 @@
     <ScrollView
         android:clickable="true"
         android:showAsAction="always"
-
         android:layout_margin="15dp"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -24,14 +29,23 @@
         android:focusableInTouchMode="true">
 
         <LinearLayout
+            android:id="@+id/mainLayout"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:orientation="vertical" >
-
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:layout_gravity="center">
             <LinearLayout
-                android:id="@+id/emptyWarning"
+                android:id="@+id/applicationsLayout"
                 android:visibility="visible"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top"
+                android:orientation="vertical" >
+
+            </LinearLayout>
+            <LinearLayout
+                android:id="@+id/emptyLayout"
+                android:visibility="gone"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
@@ -48,9 +62,8 @@
                     android:text="This phone is not paired with any applications yet." />
 
             </LinearLayout>
-
             <LinearLayout
-                android:id="@+id/noResults"
+                android:id="@+id/searchLayout"
                 android:visibility="gone"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -68,7 +81,8 @@
                     android:text="No items match your search." />
 
             </LinearLayout>
-
         </LinearLayout>
+
+
     </ScrollView>
 </LinearLayout>
