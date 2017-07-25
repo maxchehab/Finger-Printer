@@ -11,6 +11,10 @@ import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.SearchView;
 
+import com.google.gson.Gson;
+
+import java.util.Date;
+
 public class MainActivity extends AppCompatActivity {
 
     private Intent serviceIntent;
@@ -35,6 +39,19 @@ public class MainActivity extends AppCompatActivity {
         searchView.setIconifiedByDefault(false);
         searchView.clearFocus();
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+
+
+        Application app = new Application("app-id","My application");
+        app.addUser(new User("maxchehab","asfasdf","today"));
+        Application[] apps = {app};
+
+        Gson gson = new Gson();
+
+        String json = gson.toJson(apps);
+
+        Log.i("app-json",json);
+
+
 
     }
 
