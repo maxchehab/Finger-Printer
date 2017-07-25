@@ -17,6 +17,7 @@
           "electron-rebuild": "^1.5.11"
      },
      "dependencies": {
-          "arp-a": "^0.5.1"
+          "ip": "^1.1.5",
+          "minimatch": "^3.0.4"
      }
 }

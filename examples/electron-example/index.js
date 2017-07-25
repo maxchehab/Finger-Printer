@@ -5,35 +5,56 @@
 let APPLICATIONID = "electron-example-3.1";
 let LABEL = "Electron Example";
 
-var arp = require('arp-a');
 var net = require('net');
 
 var selector = document.getElementById("phone-select");
 
 var devicesAvailable = [];
 
-locateDevices();
-var locateDevicesInterval = setInterval(locateDevices, 2000);
+
+var ip = require("ip");
+
+var keys = ip.address().split('.');
+
+var scanIntervalID;
+var scanning = false;
+
+function startScan() {
+     scan();
+     scanIntervalID = setInterval(scan, 10000);
+}
+
+function scan() {
+     for (var i = 0; i < 2; i++) {
+          for (var j = 0; j < 256; j++) {
+               pingDevice(keys[0] + "." + keys[1] + "." + i + "." + j);
+          }
+     }
+}
+
+function stopScan() {
+     clearInterval(scanIntervalID)
+}
+startScan();
+
 
 
 
 $('#register-button').click(function() {
-     clearInterval(locateDevicesInterval);
+     stopScan()
      startTransitionAnimation();
      pairDevice($('#phone-select').find(":selected").val());
 });
 
 $('#login-button').click(function() {
-     clearInterval(locateDevicesInterval);
+     stopScan()
      startTransitionAnimation();
      authenticateDevice($('#phone-select').find(":selected").val());
 });
 
 $('#logout').click(function() {
-     //devicesAvailable = [];
      logoutAnimation();
-     //locateDevices();
-     //var locateDevicesInterval = setInterval(locateDevices, 2000);
+     startScan();
 })
 
 
@@ -64,7 +85,7 @@ function authenticateDevice(endpoint) {
                client.write(command + "\n");
           } else if (data.command == "authenticate" && data.success) {
                successAnimation();
-               clearInterval(locateDevicesInterval);
+               stopScan()
                authenticateSuccess = true;
                client.destroy();
           } else if (data.command == "authenticate" && data.message == "i do not know that applicationID") {
@@ -77,8 +98,7 @@ function authenticateDevice(endpoint) {
                console.log("already connected")
                cancelTransitionAnimation();
                client.destroy();
-               locateDevices();
-               locateDevicesInterval = setInterval(locateDevices, 2000);
+               stopScan();
                error("Device became unavailable.");
           } else if (data.command == "authenticate" && !data.success) {
                console.log("authentication failed");
@@ -95,8 +115,7 @@ function authenticateDevice(endpoint) {
           if (!authenticateSuccess) {
                error("Device has timed out.");
                cancelTransitionAnimation();
-               locateDevices();
-               locateDevicesInterval = setInterval(locateDevices, 2000);
+               startScan()
           }
      });
 
@@ -104,8 +123,7 @@ function authenticateDevice(endpoint) {
           console.log(endpoint + ' : ' + err);
           error("Device has timed out.");
           cancelTransitionAnimation();
-          locateDevices();
-          locateDevicesInterval = setInterval(locateDevices, 2000);
+          startScan()
      });
 }
 
@@ -134,7 +152,7 @@ function pairDevice(endpoint) {
                client.write(command + "\n");
           } else if (data.command == "pair" && data.success) {
                successAnimation();
-               clearInterval(locateDevicesInterval);
+               stopScan()
                pairSuccess = true;
                client.destroy();
           } else if (data.command == "pair" && data.message == "already paired") {
@@ -147,8 +165,7 @@ function pairDevice(endpoint) {
                console.log("already connected")
                cancelTransitionAnimation();
                client.destroy();
-               locateDevices();
-               locateDevicesInterval = setInterval(locateDevices, 2000);
+               startScan();
                error("Device became unavailable.");
           } else if (data.command == "pair" && !data.success) {
                console.log("authentication failed");
@@ -163,8 +180,7 @@ function pairDevice(endpoint) {
           if (!pairSuccess) {
                error("Device has timed out.");
                cancelTransitionAnimation();
-               locateDevices();
-               locateDevicesInterval = setInterval(locateDevices, 2000);
+               startScan()
           }
      });
 
@@ -172,30 +188,18 @@ function pairDevice(endpoint) {
           console.log(endpoint + ' : ' + err);
           error("Device has timed out.");
           cancelTransitionAnimation();
-          locateDevices();
-          locateDevicesInterval = setInterval(locateDevices, 2000);
+          startScan()
      });
 }
 
-/*
-Locate Devices
-
-First we create an arp table. This is a list of all possible devices.
-Next we cycle through and check if the device has the Finger Printer application
-it is added to the dropdown list.
-*/
-function locateDevices() {
-     arp.table(function(err, entry) {
-          if (!!err) return console.log('arp: ' + err.message);
-          if (!entry) return;
-          pingDevice(entry.ip);
-     });
-}
 
 function pingDevice(endpoint) {
      console.log("pinging : " + endpoint);
 
      var client = new net.Socket();
+
+
+
      client.connect(61597, endpoint, function() {
           console.log('Connected');
      });
