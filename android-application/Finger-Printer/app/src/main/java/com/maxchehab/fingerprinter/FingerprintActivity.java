@@ -43,39 +43,18 @@ public class FingerprintActivity extends AppCompatActivity {
     private FingerprintManager.CryptoObject cryptoObject;
 
 
-
-    /*
-        TODO Create a way for FingerprintActivity to communicate to ServerService.authenticate().
-     */
-
-    Intent serviceIntent;
-    private ServerService serverService;
-    Context context;
-
-
     public final static Object authenticateLock = new Object();
 
     public static boolean authenticate = false;
 
 
-    public Context getContext(){
-        return context;
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        context = this;
         setContentView(R.layout.activity_fingerprint);
 
         new KillListener(this).start();
-
-        serverService = new ServerService(this);
-        serviceIntent = new Intent(getContext(), serverService.getClass());
-
-        if(!isServiceRunning(serverService.getClass())){
-            startService(serviceIntent);
-        }
 
         keyguardManager = (KeyguardManager) getSystemService(KEYGUARD_SERVICE);
         fingerprintManager = (FingerprintManager) getSystemService(FINGERPRINT_SERVICE);
@@ -124,18 +103,6 @@ public class FingerprintActivity extends AppCompatActivity {
         }
     }
 
-    private boolean isServiceRunning(Class<?> serviceClass){
-        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-        for(ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)){
-            if(serviceClass.getName().equals(service.service.getClassName())){
-                Log.i("isServiceRunning:",true + "");
-                return true;
-            }
-        }
-
-        Log.i("isServiceRunning:", false + "");
-        return false;
-    }
 
     @Override
     protected void onDestroy(){

@@ -7,7 +7,6 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.BLUETOOTH" />
 
-
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_fingerprint"
@@ -18,27 +17,28 @@
         <activity
             android:name=".FingerprintActivity"
             android:excludeFromRecents="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
         </activity>
 
-        <service 
+        <service
             android:name=".ServerService"
-            android:enabled="true">
-        </service>
+            android:enabled="true"></service>
 
-        <receiver android:name="ServerRestarterBroadcastReceiver"
+        <receiver
+            android:name=".ServerRestarterBroadcastReceiver"
             android:enabled="true"
             android:exported="true"
             android:label="RestartServiceWhenStopped">
             <intent-filter>
-                <action android:name=".RestartServer"/>
+                <action android:name=".RestartServer" />
             </intent-filter>
         </receiver>
-        
+
+        <activity android:name=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>
