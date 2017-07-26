@@ -49,6 +49,7 @@ import java.util.concurrent.TimeoutException;
 
 import static com.maxchehab.fingerprinter.FingerprintActivity.authenticate;
 import static com.maxchehab.fingerprinter.FingerprintActivity.authenticateLock;
+import static com.maxchehab.fingerprinter.FingerprintActivity.username;
 
 /**
  * Created by maxchehab on 7/17/17.
@@ -150,10 +151,10 @@ public class ServerService extends Service {
                         addUser(authApplicationID, authLabel, authUsername, uniqueKey);
                         Log.i("pair-command", "Saved applicationID: " + authApplicationID);
                     }
-                    writer.println("{\"success\":" + authResponse + ",\"command\":\"pair\",\"message\":\"ran pair\",\"uniqueKey\":\"" + uniqueKey + "\",\"hardwareID\":\"" + hardwareID + "\"}");
+                    writer.println("{\"success\":" + authResponse + ",\"username\":" + username + ",\"command\":\"pair\",\"message\":\"ran pair\",\"uniqueKey\":\"" + uniqueKey + "\",\"hardwareID\":\"" + hardwareID + "\"}");
 
                 }else{
-                    writer.println("{\"success\":" + authResponse + ",\"command\":\"authenticate\",\"message\":\"ran authentication\",\"uniqueKey\":\"" + uniqueKey + "\"}");
+                    writer.println("{\"success\":" + authResponse + ",\"username\":" + username + ",\"command\":\"authenticate\",\"message\":\"ran authentication\",\"uniqueKey\":\"" + uniqueKey + "\"}");
                 }
 
 
@@ -338,6 +339,8 @@ public class ServerService extends Service {
         Intent resultIntent = new Intent(applicationContext, FingerprintActivity.class);
         resultIntent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
         resultIntent.putExtra("STARTTIME",System.currentTimeMillis());
+        resultIntent.putExtra("APPLICATIONID",applicationID);
+
         PendingIntent resultPendingIntent =
                 PendingIntent.getActivity(
                         applicationContext,

@@ -23,8 +23,11 @@ import android.util.Log;
 import android.view.View;
 import android.view.animation.DecelerateInterpolator;
 import android.view.animation.LinearInterpolator;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -37,6 +40,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
+import java.util.List;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -57,12 +61,15 @@ public class FingerprintActivity extends AppCompatActivity {
     public final static Object authenticateLock = new Object();
 
     public static boolean authenticate = false;
+    public static String username;
 
 
     public ImageView statusIcon;
     public TextView statusText;
     private ProgressBar countdown;
     private TextView cancelButton;
+    private CustomSpinner usernameSelector;
+    private TextView selectedUsername;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -102,6 +109,8 @@ public class FingerprintActivity extends AppCompatActivity {
         statusText = (TextView)findViewById(R.id.statusText);
         countdown = (ProgressBar)findViewById(R.id.countDown);
         cancelButton = (TextView)findViewById(R.id.cancelButton);
+        usernameSelector = (CustomSpinner)findViewById(R.id.usernameSelector);
+        selectedUsername = (TextView)findViewById(R.id.selectedUsername);
 
 
         Long timeDifference = System.currentTimeMillis() - getIntent().getLongExtra("STARTTIME", System.currentTimeMillis());
@@ -115,6 +124,33 @@ public class FingerprintActivity extends AppCompatActivity {
         animation.setInterpolator(new LinearInterpolator());
         animation.start();
 
+        String[] usernameList = {"maxchehab","will smith","really long username"};
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.spinner,usernameList);
+        usernameSelector.setAdapter(adapter);
+
+        selectedUsername.setText(usernameSelector.getSelectedItem().toString());
+        selectedUsername.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                usernameSelector.performClick();
+                usernameSelector.setVisibility(View.VISIBLE);
+                selectedUsername.setVisibility(View.GONE);
+            }
+        });
+
+        usernameSelector.setSpinnerEventsListener(new CustomSpinner.OnSpinnerEventsListener() {
+            @Override
+            public void onSpinnerOpened(Spinner spin) {
+
+            }
+
+            @Override
+            public void onSpinnerClosed(Spinner spin) {
+                selectedUsername.setText(usernameSelector.getSelectedItem().toString());
+                usernameSelector.setVisibility(View.GONE);
+                selectedUsername.setVisibility(View.VISIBLE);
+            }
+        });
 
         cancelButton.setOnClickListener(new View.OnClickListener() {
             @Override
