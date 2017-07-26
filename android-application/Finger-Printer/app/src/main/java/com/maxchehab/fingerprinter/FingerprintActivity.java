@@ -1,13 +1,18 @@
 package com.maxchehab.fingerprinter;
 
 import android.Manifest;
+import android.animation.ObjectAnimator;
 import android.app.Activity;
 import android.app.ActivityManager;
+import android.app.AlertDialog;
 import android.app.KeyguardManager;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.hardware.fingerprint.FingerprintManager;
+import android.os.Handler;
+import android.os.Message;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyPermanentlyInvalidatedException;
 import android.security.keystore.KeyProperties;
@@ -15,6 +20,12 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.view.animation.DecelerateInterpolator;
+import android.view.animation.LinearInterpolator;
+import android.widget.ImageView;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.IOException;
@@ -48,6 +59,11 @@ public class FingerprintActivity extends AppCompatActivity {
     public static boolean authenticate = false;
 
 
+    public ImageView statusIcon;
+    public TextView statusText;
+    private ProgressBar countdown;
+    private TextView cancelButton;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -80,6 +96,54 @@ public class FingerprintActivity extends AppCompatActivity {
             FingerprintHandler helper = new FingerprintHandler(this);
             helper.startAuth(fingerprintManager,cryptoObject);
         }
+
+
+        statusIcon = (ImageView)findViewById(R.id.statusIcon);
+        statusText = (TextView)findViewById(R.id.statusText);
+        countdown = (ProgressBar)findViewById(R.id.countDown);
+        cancelButton = (TextView)findViewById(R.id.cancelButton);
+
+
+        Long timeDifference = System.currentTimeMillis() - getIntent().getLongExtra("STARTTIME", System.currentTimeMillis());
+
+        Long remainingTime = 30000 - timeDifference;
+
+        Integer percentage = (int)((remainingTime * 100) / 30000);
+        countdown.setProgress(percentage);
+        ObjectAnimator animation = ObjectAnimator.ofInt(countdown, "progress", 0);
+        animation.setDuration(remainingTime);
+        animation.setInterpolator(new LinearInterpolator());
+        animation.start();
+
+
+        cancelButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                DialogInterface.OnClickListener dialogClickListener = new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        switch (which){
+                            case DialogInterface.BUTTON_POSITIVE:
+                                authenticate = false;
+                                synchronized (authenticateLock) {
+                                    authenticateLock.notify();
+                                }
+                                break;
+                        }
+                    }
+                };
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(v.getContext());
+                builder.setMessage("Are you sure you want to cancel the authentication?")
+                        .setPositiveButton("cancel", dialogClickListener)
+                        .setNegativeButton("no", dialogClickListener)
+                        .setTitle("Attention")
+                        .setIcon(R.mipmap.ic_warning)
+                        .show();
+
+            }
+        });
+
     }
 
     private static class KillListener extends Thread {

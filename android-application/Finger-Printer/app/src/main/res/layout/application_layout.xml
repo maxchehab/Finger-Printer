@@ -11,9 +11,9 @@
         android:layout_height="wrap_content"
         android:text="[Application Label]"
         android:textSize="18sp"
-        android:textStyle="bold" />
+        android:textStyle="bold"
+        android:layout_margin="5dp"/>
     <LinearLayout
-        android:layout_marginTop="-5dp"
         android:id="@+id/usersLayout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

@@ -17,6 +17,7 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -34,6 +35,8 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Callable;
@@ -66,6 +69,8 @@ public class ServerService extends Service {
 
     private static boolean connected = false;
     private static int currentClient = 0;
+
+    private static Gson gson = new Gson();
 
     static ServerSocket serverSocket;
 
@@ -106,15 +111,17 @@ public class ServerService extends Service {
         private String action;
         private String authApplicationID;
         private String authLabel;
+        private String authUsername;
         private String uniqueKey;
 
         private Socket socket;
         private PrintWriter writer;
 
-        public AuthenticateHandler(String action,String authApplicationID, String authLabel, String uniqueKey, Socket socket, PrintWriter printWriter){
+        public AuthenticateHandler(String action,String authApplicationID, String authUsername, String authLabel, String uniqueKey, Socket socket, PrintWriter printWriter){
             this.action = action;
             this.authApplicationID = authApplicationID;
             this.authLabel = authLabel;
+            this.authUsername = authUsername;
             this.uniqueKey = uniqueKey;
             this.socket = socket;
             this.writer = printWriter;
@@ -137,12 +144,10 @@ public class ServerService extends Service {
             Future<Boolean> authFuture = authExecutor.submit(authTask);
             try {
                 boolean authResponse = authFuture.get(30, TimeUnit.SECONDS);
-
+                Log.i("authResponse","30 seconds or auth");
                 if(action == "pair"){
                     if(authResponse){
-                        SharedPreferences.Editor editor = sharedPreferences.edit();
-                        editor.putString(authApplicationID, "{\"uniqueKey\":\"" + uniqueKey + "\",\"label\":\"" + authLabel + "\"}");
-                        editor.commit();
+                        addUser(authApplicationID, authLabel, authUsername, uniqueKey);
                         Log.i("pair-command", "Saved applicationID: " + authApplicationID);
                     }
                     writer.println("{\"success\":" + authResponse + ",\"command\":\"pair\",\"message\":\"ran pair\",\"uniqueKey\":\"" + uniqueKey + "\",\"hardwareID\":\"" + hardwareID + "\"}");
@@ -229,34 +234,32 @@ public class ServerService extends Service {
                             case "pair":
 
                                 final String pairApplicationID = rootobj.get("applicationID").getAsString();
+                                final String pairUsername = rootobj.get("username").getAsString();
                                 final String pairLabel = rootobj.get("label").getAsString();
                                 uniqueKey = bin2hex(getHash(rootobj.get("salt").getAsString() + hardwareID));
 
-                                if(sharedPreferences.contains(pairApplicationID)){
+                                if(containsUser(pairApplicationID, pairUsername)){
                                     writer.println("{\"success\":false,\"command\":\"pair\",\"message\":\"already paired\"}");
                                     break;
                                 }
 
-                                new AuthenticateHandler("pair",pairApplicationID,pairLabel,uniqueKey,socket,writer).start();
+                                new AuthenticateHandler("pair",pairApplicationID,pairUsername,pairLabel,uniqueKey,socket,writer).start();
 
                                 break;
                             case "authenticate":
                                 final String authApplicationID = rootobj.get("applicationID").getAsString();
-                                if(!sharedPreferences.contains(authApplicationID)){
-                                    writer.println("{\"success\":false,\"command\":\"authenticate\",\"message\":\"i do not know that applicationID\"}");
+                                final String authUsername = rootobj.get("username").getAsString();
+
+                                if(!containsUser(authApplicationID,authUsername)){
+                                    writer.println("{\"success\":false,\"command\":\"authenticate\",\"message\":\"i do not know that user\"}");
                                     break;
                                 }
 
-                                String data = sharedPreferences.getString(authApplicationID,null);
-                                JsonParser jsonParser = new JsonParser();
-                                JsonElement jsonElement = jsonParser.parse(data);
-                                JsonObject jsonObject = jsonElement.getAsJsonObject();
+                                uniqueKey = getUniqueKey(authApplicationID,authUsername);
 
-                                uniqueKey = jsonObject.get("uniqueKey").getAsString();
+                                final String authLabel = getLabel(authApplicationID);
 
-                                final String authLabel = jsonObject.get("label").getAsString();
-
-                                new AuthenticateHandler("authenticate",authApplicationID,authLabel,uniqueKey,socket,writer).start();
+                                new AuthenticateHandler("authenticate",authApplicationID,authUsername,authLabel,uniqueKey,socket,writer).start();
 
                                 break;
                             default:
@@ -266,7 +269,7 @@ public class ServerService extends Service {
 
                         StringWriter errors = new StringWriter();
                         e.printStackTrace(new PrintWriter(errors));
-                        writer.println("{\"success\":false,\"message\":\"" + errors.toString() + "\"}");
+                        writer.println("{\"success\":false,\"message\":\"" + errors.toString().replaceAll("\"", "'").replaceAll("\n", "").replaceAll("\r", "").replaceAll("\t", "") + "'" + "\"}");
                     }
                 }
             }catch(IOException e){
@@ -311,13 +314,13 @@ public class ServerService extends Service {
     public static boolean authenticate(String applicationID, String action, String label){
         notificationCounter++;
 
-        if(action == "authenticate"){
+        /*if(action == "authenticate"){
             String data = sharedPreferences.getString(applicationID,null);
             JsonParser jp = new JsonParser();
             JsonElement root = jp.parse(data);
             JsonObject rootobj = root.getAsJsonObject();
             label = rootobj.get("label").getAsString();
-        }
+        }*/
 
 
         NotificationCompat.Builder mBuilder =
@@ -334,7 +337,7 @@ public class ServerService extends Service {
 
         Intent resultIntent = new Intent(applicationContext, FingerprintActivity.class);
         resultIntent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-
+        resultIntent.putExtra("STARTTIME",System.currentTimeMillis());
         PendingIntent resultPendingIntent =
                 PendingIntent.getActivity(
                         applicationContext,
@@ -367,7 +370,7 @@ public class ServerService extends Service {
 
         new ServerInitializer().start();
         this.applicationContext = this;
-        sharedPreferences = applicationContext.getSharedPreferences("data", MODE_PRIVATE);
+        sharedPreferences = applicationContext.getSharedPreferences("database", MODE_PRIVATE);
         startTimer();
         return START_STICKY;
     }
@@ -400,6 +403,65 @@ public class ServerService extends Service {
             timer.cancel();
             timer = null;
         }
+    }
+
+    public static boolean containsUser(String applicationID, String username){
+        LinkedList<Application> applications = new LinkedList<>(Arrays.asList(gson.fromJson(sharedPreferences.getString("applications","[]"), Application[].class)));
+        for (Application application : applications) {
+            if(application.applicationID.equals(applicationID)){
+                for (User user : application.users) {
+                    if(user.username.equals(username)){
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    public static String getUniqueKey(String applicationID, String username){
+        LinkedList<Application> applications = new LinkedList<>(Arrays.asList(gson.fromJson(sharedPreferences.getString("applications","[]"), Application[].class)));
+        for (Application application : applications) {
+            if(application.applicationID.equals(applicationID)){
+                for (User user : application.users) {
+                    if(user.username.equals(username)){
+                        return user.uniqueKey;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    public static String getLabel(String applicationID){
+        LinkedList<Application> applications = new LinkedList<>(Arrays.asList(gson.fromJson(sharedPreferences.getString("applications","[]"), Application[].class)));
+        for (Application application : applications) {
+            if(application.applicationID.equals(applicationID)){
+                return application.label;
+            }
+        }
+        return null;
+    }
+
+    public static void addUser(String applicationID, String label, String username, String uniqueKey){
+        Log.i("addUser()", "applicationID: " + applicationID + ", username: " + username + ", uniqueKey: " + uniqueKey);
+        LinkedList<Application> applications = new LinkedList<>(Arrays.asList(gson.fromJson(sharedPreferences.getString("applications","[]"), Application[].class)));
+        for (Application application : applications) {
+            if(application.applicationID.equals(applicationID)){
+                application.users.add(new User(username,uniqueKey));
+                SharedPreferences.Editor editor = sharedPreferences.edit();
+                editor.putString("applications", gson.toJson(applications.toArray()));
+                editor.commit();
+                return;
+            }
+        }
+
+        applications.add(new Application(applicationID,label));
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putString("applications", gson.toJson(applications.toArray()));
+        editor.commit();
+
+        addUser(applicationID, label, username,uniqueKey);
     }
 
     @Nullable

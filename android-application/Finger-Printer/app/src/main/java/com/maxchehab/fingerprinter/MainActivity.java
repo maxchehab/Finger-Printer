@@ -79,9 +79,9 @@ public class MainActivity extends AppCompatActivity {
         String query = searchView.getQuery().toString();
 
         SharedPreferences sharedPreferences = getSharedPreferences("database",MODE_PRIVATE);
+        applications = new LinkedList<>(Arrays.asList(gson.fromJson(sharedPreferences.getString("applications","[]"), Application[].class)));
 
-        //TODO reverse to getString("applications","[]");
-        applications = new LinkedList<>(Arrays.asList(gson.fromJson(sharedPreferences.getString("applications","[{'applicationID':'app-id','label':'Instagram','users':[{'uniqueKey':'asfasdf','username':'maxchehab'}]}, {'applicationID':'app-id','label':'Google Inbox','users':[{'uniqueKey':'asfasdf','username':'maxchehab@gmail.com'}, {'uniqueKey':'asfasdf','username':'maxchehab1@gmail.com'}]}]"), Application[].class)));
+        Log.i("applications",gson.toJson(applications));
 
         FrameLayout.LayoutParams centerParams = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT);
         centerParams.gravity = Gravity.CENTER;
@@ -152,9 +152,7 @@ public class MainActivity extends AppCompatActivity {
 
         Log.i("deleting",applicationID + " : " + username);
         SharedPreferences sharedPreferences = getSharedPreferences("database",MODE_PRIVATE);
-
-        //TODO reverse to getString("applications","[]");
-        applications = new LinkedList<>(Arrays.asList(gson.fromJson(sharedPreferences.getString("applications","[{'applicationID':'app-id','label':'Instagram','users':[{'uniqueKey':'asfasdf','username':'maxchehab'}]}, {'applicationID':'app-id','label':'Google Inbox','users':[{'uniqueKey':'asfasdf','username':'maxchehab@gmail.com'}, {'uniqueKey':'asfasdf','username':'maxchehab1@gmail.com'}]}]"), Application[].class)));
+        applications = new LinkedList<>(Arrays.asList(gson.fromJson(sharedPreferences.getString("applications","[]"), Application[].class)));
 
         for (Application application : applications) {
             if(application.applicationID.equals(applicationID)){
