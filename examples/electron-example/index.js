@@ -2,15 +2,15 @@
 // be executed in the renderer process for that window.
 // All of the Node.js APIs are available in this process.
 
-let APPLICATIONID = "electron-example-3.1";
-let LABEL = "Electron Example";
+let APPLICATIONID = "electron-example-3.5";
+let LABEL = "Electron Example 2.0";
 
 var net = require('net');
 
 var selector = document.getElementById("phone-select");
 
 var devicesAvailable = [];
-
+updateDevices();
 
 var ip = require("ip");
 
@@ -58,19 +58,12 @@ $('#logout').click(function() {
 })
 
 
-
-
 function authenticateDevice(endpoint) {
      console.log("authenticating : " + endpoint);
 
      var client = new net.Socket();
      var authenticateSuccess = false;
 
-
-     client.setTimeout(30000);
-     client.on('timeout', () => {
-          client.destroy();
-     });
      client.connect(61597, endpoint, function() {
           console.log('Connected');
      });
@@ -85,7 +78,9 @@ function authenticateDevice(endpoint) {
                client.write(command + "\n");
           } else if (data.command == "authenticate" && data.success) {
                successAnimation();
+               //cancelTransitionAnimation();
                stopScan()
+               updateUsername(data.username);
                authenticateSuccess = true;
                client.destroy();
           } else if (data.command == "authenticate" && data.message == "i do not know that applicationID") {
@@ -107,6 +102,11 @@ function authenticateDevice(endpoint) {
                devicesAvailable = [];
 
                error("Authentication failed. Please make sure your fingerprint is saved to your device.");
+          } else if (!data.success) {
+               console.log(data.message);
+               cancelTransitionAnimation();
+               client.destroy();
+               error("Request was invalid. Please contact an administrator.");
           }
      });
 
@@ -125,6 +125,10 @@ function authenticateDevice(endpoint) {
           cancelTransitionAnimation();
           startScan()
      });
+}
+
+function updateUsername(username){
+     document.getElementById("welcome").innerHTML = "Welcome back <strong>" + username + "</strong>";
 }
 
 function pairDevice(endpoint) {
@@ -147,12 +151,13 @@ function pairDevice(endpoint) {
           data = JSON.parse(data);
 
           if (data.command == "knock-knock" && data.success) {
-               var command = JSON.stringify(new pairCommand(APPLICATIONID, LABEL));
+               var command = JSON.stringify(new pairCommand(APPLICATIONID, LABEL, $('#username').val()));
                console.log("pairing : " + command);
                client.write(command + "\n");
           } else if (data.command == "pair" && data.success) {
                successAnimation();
                stopScan()
+               updateUsername(data.username);
                pairSuccess = true;
                client.destroy();
           } else if (data.command == "pair" && data.message == "already paired") {
@@ -160,7 +165,7 @@ function pairDevice(endpoint) {
                console.log("already paired");
                cancelTransitionAnimation();
                client.destroy();
-
+               startScan();
           } else if (data.message == "i am already connected") {
                console.log("already connected")
                cancelTransitionAnimation();
@@ -172,6 +177,11 @@ function pairDevice(endpoint) {
                cancelTransitionAnimation();
                client.destroy();
                error("Authentication failed. Please make sure your fingerprint is saved to your device.");
+          } else if (!data.success) {
+               console.log(data.message);
+               cancelTransitionAnimation();
+               client.destroy();
+               error("Request was invalid. Please contact an administrator.");
           }
      });
 
@@ -281,8 +291,9 @@ function updateDevices() {
 
 }
 
-function pairCommand(applicationID, label) {
+function pairCommand(applicationID, label, username) {
      this.applicationID = applicationID;
+     this.username = username;
      this.command = "pair";
      this.label = label;
      this.salt = saltGenerator();

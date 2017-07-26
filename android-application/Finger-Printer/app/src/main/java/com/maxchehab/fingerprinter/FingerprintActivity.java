@@ -9,6 +9,7 @@ import android.app.KeyguardManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.hardware.fingerprint.FingerprintManager;
 import android.os.Handler;
@@ -31,6 +32,8 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
+
 import java.io.IOException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -40,6 +43,9 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 
 import javax.crypto.Cipher;
@@ -50,6 +56,9 @@ import javax.crypto.SecretKey;
 public class FingerprintActivity extends AppCompatActivity {
 
     private static final String KEY_NAME = "fingerprinter_key";
+
+    private static Gson gson = new Gson();
+
     private FingerprintManager fingerprintManager;
     private KeyguardManager keyguardManager;
     private KeyStore keyStore;
@@ -68,8 +77,9 @@ public class FingerprintActivity extends AppCompatActivity {
     public TextView statusText;
     private ProgressBar countdown;
     private TextView cancelButton;
+    private TextView prevText;
     private CustomSpinner usernameSelector;
-    private TextView selectedUsername;
+    public static TextView selectedUsername;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -111,6 +121,7 @@ public class FingerprintActivity extends AppCompatActivity {
         cancelButton = (TextView)findViewById(R.id.cancelButton);
         usernameSelector = (CustomSpinner)findViewById(R.id.usernameSelector);
         selectedUsername = (TextView)findViewById(R.id.selectedUsername);
+        prevText = (TextView)findViewById(R.id.prevText);
 
 
         Long timeDifference = System.currentTimeMillis() - getIntent().getLongExtra("STARTTIME", System.currentTimeMillis());
@@ -124,33 +135,41 @@ public class FingerprintActivity extends AppCompatActivity {
         animation.setInterpolator(new LinearInterpolator());
         animation.start();
 
-        String[] usernameList = {"maxchehab","will smith","really long username"};
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.spinner,usernameList);
-        usernameSelector.setAdapter(adapter);
+        if(getIntent().getStringExtra("ACTION").equals("pair")){
+            selectedUsername.setText(getIntent().getStringExtra("USERNAME"));
+            prevText.setText("Pairing ");
+        }else{
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.spinner,usernameList(getIntent().getStringExtra("APPLICATIONID")));
+            usernameSelector.setAdapter(adapter);
 
-        selectedUsername.setText(usernameSelector.getSelectedItem().toString());
-        selectedUsername.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                usernameSelector.performClick();
-                usernameSelector.setVisibility(View.VISIBLE);
-                selectedUsername.setVisibility(View.GONE);
-            }
-        });
+            selectedUsername.setText(usernameSelector.getSelectedItem().toString());
+            selectedUsername.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    usernameSelector.performClick();
+                    usernameSelector.setVisibility(View.VISIBLE);
+                    selectedUsername.setVisibility(View.GONE);
+                }
+            });
 
-        usernameSelector.setSpinnerEventsListener(new CustomSpinner.OnSpinnerEventsListener() {
-            @Override
-            public void onSpinnerOpened(Spinner spin) {
+            usernameSelector.setSpinnerEventsListener(new CustomSpinner.OnSpinnerEventsListener() {
+                @Override
+                public void onSpinnerOpened(Spinner spin) {
 
-            }
+                }
 
-            @Override
-            public void onSpinnerClosed(Spinner spin) {
-                selectedUsername.setText(usernameSelector.getSelectedItem().toString());
-                usernameSelector.setVisibility(View.GONE);
-                selectedUsername.setVisibility(View.VISIBLE);
-            }
-        });
+                @Override
+                public void onSpinnerClosed(Spinner spin) {
+                    selectedUsername.setText(usernameSelector.getSelectedItem().toString());
+                    usernameSelector.setVisibility(View.GONE);
+                    selectedUsername.setVisibility(View.VISIBLE);
+                }
+            });
+        }
+
+
+
+
 
         cancelButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -180,6 +199,12 @@ public class FingerprintActivity extends AppCompatActivity {
             }
         });
 
+    }
+
+    public void restartAuth(){
+        cryptoObject = new FingerprintManager.CryptoObject(cipher);
+        FingerprintHandler helper = new FingerprintHandler(this);
+        helper.startAuth(fingerprintManager,cryptoObject);
     }
 
     private static class KillListener extends Thread {
@@ -264,5 +289,20 @@ public class FingerprintActivity extends AppCompatActivity {
                 | NoSuchAlgorithmException | InvalidKeyException e) {
             throw new RuntimeException("Failed to init Cipher", e);
         }
+    }
+
+    private List<String> usernameList(String applicationID){
+        List<String> usernameList = new ArrayList<>();
+
+        SharedPreferences sharedPreferences = getSharedPreferences("database",MODE_PRIVATE);
+        LinkedList<Application> applications = new LinkedList<>(Arrays.asList(gson.fromJson(sharedPreferences.getString("applications","[]"), Application[].class)));
+        for (Application application : applications) {
+            if(application.applicationID.equals(applicationID)){
+                for (User user : application.users) {
+                    usernameList.add(user.username);
+                }
+            }
+        }
+        return usernameList;
     }
 }

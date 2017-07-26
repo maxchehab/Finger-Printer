@@ -118,16 +118,23 @@ public class ServerService extends Service {
         private Socket socket;
         private PrintWriter writer;
 
-        public AuthenticateHandler(String action,String authApplicationID, String authUsername, String authLabel, String uniqueKey, Socket socket, PrintWriter printWriter){
-            this.action = action;
-            this.authApplicationID = authApplicationID;
-            this.authLabel = authLabel;
-            this.authUsername = authUsername;
+
+        public AuthenticateHandler(String applicationID, Socket socket, PrintWriter printWriter){
+            this.action = "authenticate";
+            this.authApplicationID = applicationID;
+            this.socket = socket;
+            this.writer = printWriter;
+            this.authLabel = getLabel(applicationID);
+        }
+
+        public AuthenticateHandler(String applicationID, String label, String username, String uniqueKey, Socket socket, PrintWriter printWriter){
+            this.action = "pair";
+            this.authApplicationID = applicationID;
+            this.authLabel = label;
+            this.authUsername = username;
             this.uniqueKey = uniqueKey;
             this.socket = socket;
             this.writer = printWriter;
-
-
         }
 
 
@@ -139,7 +146,7 @@ public class ServerService extends Service {
             ExecutorService authExecutor = Executors.newCachedThreadPool();
             Callable<Boolean> authTask = new Callable<Boolean>() {
                 public Boolean call() {
-                    return authenticate(authApplicationID,action,authLabel);
+                    return authenticate(authApplicationID,action,authLabel,authUsername);
                 }
             };
             Future<Boolean> authFuture = authExecutor.submit(authTask);
@@ -151,12 +158,11 @@ public class ServerService extends Service {
                         addUser(authApplicationID, authLabel, authUsername, uniqueKey);
                         Log.i("pair-command", "Saved applicationID: " + authApplicationID);
                     }
-                    writer.println("{\"success\":" + authResponse + ",\"username\":" + username + ",\"command\":\"pair\",\"message\":\"ran pair\",\"uniqueKey\":\"" + uniqueKey + "\",\"hardwareID\":\"" + hardwareID + "\"}");
-
+                    writer.println("{\"success\":" + authResponse + ",\"username\":\"" + username + "\",\"command\":\"pair\",\"message\":\"ran pair\",\"uniqueKey\":\"" + uniqueKey + "\",\"hardwareID\":\"" + hardwareID + "\"}");
                 }else{
-                    writer.println("{\"success\":" + authResponse + ",\"username\":" + username + ",\"command\":\"authenticate\",\"message\":\"ran authentication\",\"uniqueKey\":\"" + uniqueKey + "\"}");
+                    uniqueKey = getUniqueKey(authApplicationID,username);
+                    writer.println("{\"success\":" + authResponse + ",\"username\":\"" + username + "\",\"command\":\"authenticate\",\"message\":\"ran authentication\",\"uniqueKey\":\"" + uniqueKey + "\"}");
                 }
-
 
                 synchronized (authenticateLock) {
                     authenticateLock.notify();
@@ -244,23 +250,19 @@ public class ServerService extends Service {
                                     break;
                                 }
 
-                                new AuthenticateHandler("pair",pairApplicationID,pairUsername,pairLabel,uniqueKey,socket,writer).start();
-
+                                new AuthenticateHandler(pairApplicationID,pairLabel,pairUsername,uniqueKey,socket,writer).start();
                                 break;
                             case "authenticate":
                                 final String authApplicationID = rootobj.get("applicationID").getAsString();
-                                final String authUsername = rootobj.get("username").getAsString();
 
-                                if(!containsUser(authApplicationID,authUsername)){
+                                if(!containsApplication(authApplicationID)){
                                     writer.println("{\"success\":false,\"command\":\"authenticate\",\"message\":\"i do not know that user\"}");
                                     break;
                                 }
 
-                                uniqueKey = getUniqueKey(authApplicationID,authUsername);
-
                                 final String authLabel = getLabel(authApplicationID);
 
-                                new AuthenticateHandler("authenticate",authApplicationID,authUsername,authLabel,uniqueKey,socket,writer).start();
+                                new AuthenticateHandler(authApplicationID,socket, writer).start();
 
                                 break;
                             default:
@@ -312,7 +314,7 @@ public class ServerService extends Service {
         return String.format("%0" + (data.length*2) + "X", new BigInteger(1, data));
     }
 
-    public static boolean authenticate(String applicationID, String action, String label){
+    public static boolean authenticate(String applicationID, String action, String label, String username){
         notificationCounter++;
 
         /*if(action == "authenticate"){
@@ -340,6 +342,10 @@ public class ServerService extends Service {
         resultIntent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
         resultIntent.putExtra("STARTTIME",System.currentTimeMillis());
         resultIntent.putExtra("APPLICATIONID",applicationID);
+        resultIntent.putExtra("ACTION",action);
+        if(action.equals("pair")){
+            resultIntent.putExtra("USERNAME",username);
+        }
 
         PendingIntent resultPendingIntent =
                 PendingIntent.getActivity(
@@ -434,6 +440,16 @@ public class ServerService extends Service {
             }
         }
         return null;
+    }
+
+    public static boolean containsApplication(String applicationID){
+        LinkedList<Application> applications = new LinkedList<>(Arrays.asList(gson.fromJson(sharedPreferences.getString("applications","[]"), Application[].class)));
+        for (Application application : applications) {
+            if(application.applicationID.equals(applicationID)){
+               return true;
+            }
+        }
+        return false;
     }
 
     public static String getLabel(String applicationID){

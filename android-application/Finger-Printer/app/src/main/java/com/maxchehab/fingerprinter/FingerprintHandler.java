@@ -7,10 +7,13 @@ import android.hardware.fingerprint.FingerprintManager;
 import android.os.CancellationSignal;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.res.ResourcesCompat;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import static com.maxchehab.fingerprinter.FingerprintActivity.authenticate;
 import static com.maxchehab.fingerprinter.FingerprintActivity.authenticateLock;
+import static com.maxchehab.fingerprinter.FingerprintActivity.username;
+import static com.maxchehab.fingerprinter.FingerprintActivity.selectedUsername;
 
 /**
  * Created by maxchehab on 7/16/17.
@@ -39,9 +42,11 @@ public class FingerprintHandler extends FingerprintManager.AuthenticationCallbac
 
     @Override
     public void onAuthenticationError(int errMsgId, CharSequence errString) {
+        ((FingerprintActivity)appContext).restartAuth();
         Toast.makeText(appContext,
-                "Authentication error\n" + errString,
+                "Authentication error\n" + errString + "\nid: " + errMsgId,
                 Toast.LENGTH_LONG).show();
+
     }
 
     @Override
@@ -65,6 +70,7 @@ public class FingerprintHandler extends FingerprintManager.AuthenticationCallbac
         fingerprintActivity.statusText.setTextColor(ResourcesCompat.getColor(appContext.getResources(), R.color.colorSuccess, null));
 
         authenticate = true;
+        username = selectedUsername.getText().toString();
         synchronized (authenticateLock) {
             authenticateLock.notify();
         }
