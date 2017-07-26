@@ -279,6 +279,9 @@ public class ServerService extends Service {
                     if(currentClient == clientNumber){
                         notificationManager.cancelAll();
                         connected = false;
+                        synchronized (authenticateLock) {
+                            authenticateLock.notify();
+                        }
                     }
                     socket.close();
                 }catch(IOException e){

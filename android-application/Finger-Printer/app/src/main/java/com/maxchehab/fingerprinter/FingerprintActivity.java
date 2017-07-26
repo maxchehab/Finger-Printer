@@ -48,7 +48,6 @@ public class FingerprintActivity extends AppCompatActivity {
     public static boolean authenticate = false;
 
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
