@@ -201,12 +201,6 @@ public class FingerprintActivity extends AppCompatActivity {
 
     }
 
-    public void restartAuth(){
-        cryptoObject = new FingerprintManager.CryptoObject(cipher);
-        FingerprintHandler helper = new FingerprintHandler(this);
-        helper.startAuth(fingerprintManager,cryptoObject);
-    }
-
     private static class KillListener extends Thread {
 
         private Activity activity;

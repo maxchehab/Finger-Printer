@@ -13,7 +13,7 @@ function startTransitionAnimation() {
      }, {
           duration: 200,
           queue: false
-     }).addClass('visible');
+     }).removeClass('hidden');
 };
 
 function cancelTransitionAnimation() {
@@ -31,7 +31,10 @@ function cancelTransitionAnimation() {
      }, {
           duration: 200,
           queue: false
-     }).removeClass('visible');
+     }).addClass('hidden');
+     setTimeout(function () {
+          $('*').stop();
+     }, 650);
 }
 
 function successAnimation() {
@@ -47,14 +50,13 @@ function successAnimation() {
      }, {
           duration: 200,
           queue: false
-     }).removeClass('visible');
+     }).addClass('hidden');
 
      $('.card').removeClass('testtwo');
      $('.card').removeClass('test');
      $('.card').removeClass('register');
      $('.card').removeClass('login');
      $('.card').addClass('success');
-
 }
 
 function logoutAnimation(){
@@ -66,9 +68,7 @@ function logoutAnimation(){
 
      setTimeout(function() {
           $('.card').removeClass('test');
-          $('*').stop();
      }, 800);
-     cancelTransitionAnimation();
 }
 
 function stopAuthenticateAnimation() {
@@ -84,7 +84,7 @@ function stopAuthenticateAnimation() {
      }, {
           duration: 200,
           queue: false
-     }).addClass('visible');
+     }).removeClass('hidden');
      $('.card').removeClass('testtwo');
      $('.card').removeClass('test');
      $('.login').fadeOut(123);

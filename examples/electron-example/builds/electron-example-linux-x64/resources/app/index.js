@@ -10,7 +10,7 @@ var net = require('net');
 var selector = document.getElementById("phone-select");
 
 var devicesAvailable = [];
-
+updateDevices();
 
 var ip = require("ip");
 
@@ -58,8 +58,6 @@ $('#logout').click(function() {
 })
 
 
-
-
 function authenticateDevice(endpoint) {
      console.log("authenticating : " + endpoint);
 
@@ -80,6 +78,7 @@ function authenticateDevice(endpoint) {
                client.write(command + "\n");
           } else if (data.command == "authenticate" && data.success) {
                successAnimation();
+               //cancelTransitionAnimation();
                stopScan()
                updateUsername(data.username);
                authenticateSuccess = true;
@@ -166,7 +165,7 @@ function pairDevice(endpoint) {
                console.log("already paired");
                cancelTransitionAnimation();
                client.destroy();
-
+               startScan();
           } else if (data.message == "i am already connected") {
                console.log("already connected")
                cancelTransitionAnimation();

@@ -2,8 +2,8 @@
 // be executed in the renderer process for that window.
 // All of the Node.js APIs are available in this process.
 
-let APPLICATIONID = "electron-example-3.5";
-let LABEL = "Electron Example 2.0";
+let APPLICATIONID = "electron-example-3.7";
+let LABEL = "Max's Computer";
 
 var net = require('net');
 

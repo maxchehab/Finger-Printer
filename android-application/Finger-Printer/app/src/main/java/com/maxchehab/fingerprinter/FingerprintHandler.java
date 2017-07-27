@@ -42,10 +42,8 @@ public class FingerprintHandler extends FingerprintManager.AuthenticationCallbac
 
     @Override
     public void onAuthenticationError(int errMsgId, CharSequence errString) {
-        ((FingerprintActivity)appContext).restartAuth();
-        Toast.makeText(appContext,
-                "Authentication error\n" + errString + "\nid: " + errMsgId,
-                Toast.LENGTH_LONG).show();
+       // ((FingerprintActivity)appContext).restartAuth();
+        Toast.makeText(appContext, "Unfortunately, an unrecoverable error as occurred.\n Please restart the authentication process.",  Toast.LENGTH_LONG).show();
 
     }
 

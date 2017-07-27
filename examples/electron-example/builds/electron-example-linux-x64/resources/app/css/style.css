@@ -70,7 +70,7 @@ body .success {
      z-index: -999;
      display: none;
 }
-.card.register .login, .card.register .success{
+.card.register .login, .card.register .success, .card.login .input_fields__user{
      z-index: -999;
      display: none;
 }
@@ -80,6 +80,9 @@ body .success {
      display: none;
 }
 
+.hidden{
+     z-index: -999
+}
 
 body .success p {
      font-size: 14px;
@@ -169,6 +172,7 @@ body .input_title {
 }
 
 body .input_fields {
+     width: 100%;
      height: 208px;
      position: absolute;
      left: 0;

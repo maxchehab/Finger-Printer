@@ -16,7 +16,7 @@ function createWindow() {
      mainWindow = new BrowserWindow({
           width: 800,
           height: 600,
-          icon: path.join(__dirname, 'img/ic_fingerprint.png')
+          icon: path.join('img/ic_fingerprint.png')
      })
 
      // and load the index.html of the app.
