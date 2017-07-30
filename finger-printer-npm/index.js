@@ -77,48 +77,62 @@ function ping(endpoint) {
 }
 
 exports.authenticate = function authenticate(endpoint, applicationID, callback) {
+
+     //Create client socket.
      var client = new net.Socket();
      var success = false;
 
+     //Connect socket to port
      client.connect(61597, endpoint);
 
      client.on('data', function(data) {
+          //Retrieve and convert data to json
           data = JSON.parse(data);
 
+          /*By default, the application will return the knock-knock response.
+          If we receive this response we need to continue the authentication
+          request.*/
           if (data.command == "knock-knock" && data.success) {
+               //Create command in json.
                var command = JSON.stringify({
                     applicationID: applicationID,
                     command: "authenticate"
                });
+               //Write command to socket stream.
                client.write(command + "\n");
+
+               /*if the response is for the authentication and success is true,
+               the user successfuly authenticated.*/
           } else if (data.command == "authenticate" && data.success) {
                success = true;
-               callback && callback(false, data);
+               callback && callback(true, data);
                client.destroy();
+
+               //All other if statements check specific errors.
           } else if (data.command == "authenticate" && data.message == "i do not know that applicationID") {
-               callback && callback("Device does not know this application. Maybe you want to register?");
+               callback && callback(false, data);
                client.destroy();
 
           } else if (data.message == "i am already connected") {
-               callback && callback("Device became unavailable.");
+               callback && callback(false, data);
                client.destroy();
           } else if (data.command == "authenticate" && !data.success) {
-               callback && callback("Authentication failed. Please make sure your fingerprint is saved to your device.");
+               callback && callback(false, data);
                client.destroy();
           } else if (!data.success) {
-               callback && callback("Request was invalid. Please contact an administrator.");
+               callback && callback(false, data);
                client.destroy();
           }
      });
 
      client.on('close', function() {
           if (!success) {
-               callback && callback("Device has timed out.");
+               callback && callback(false, {message : "close"});
           }
      });
 
-     client.on('error', function(err) {
-          callback && callback("Device has timed out.");
+     client.on('error', function(error) {
+          callback && callback(false, {message : "error", error : error});
      });
 }
 
