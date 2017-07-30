@@ -7,37 +7,43 @@ let LABEL = "Max's Computer";
 
 var net = require('net');
 
+
+var fingerprinter = require('finger-printer');
+
+
+fingerprinter.on('addDevice',function(device){
+     console.log(device);
+     if (!containsDevice(device.endpoint)) {
+          devicesAvailable.push(device);
+          updateDevices();
+     }
+});
+
+fingerprinter.on('removeDevice', function(endpoint){
+     removeDevice(endpoint);
+     updateDevices();
+});
+
+
+
+
 var selector = document.getElementById("phone-select");
 
 var devicesAvailable = [];
 updateDevices();
 
-var ip = require("ip");
-
-var keys = ip.address().split('.');
-
 var scanIntervalID;
 var scanning = false;
 
 function startScan() {
-     scan();
-     scanIntervalID = setInterval(scan, 10000);
-}
-
-function scan() {
-     for (var i = 0; i < 2; i++) {
-          for (var j = 0; j < 256; j++) {
-               pingDevice(keys[0] + "." + keys[1] + "." + i + "." + j);
-          }
-     }
+     fingerprinter.findDevices();
+     scanIntervalID = setInterval(fingerprinter.findDevices(), 10000);
 }
 
 function stopScan() {
      clearInterval(scanIntervalID)
 }
 startScan();
-
-
 
 
 $('#register-button').click(function() {
@@ -202,47 +208,6 @@ function pairDevice(endpoint) {
      });
 }
 
-
-function pingDevice(endpoint) {
-     console.log("pinging : " + endpoint);
-
-     var client = new net.Socket();
-
-
-
-     client.connect(61597, endpoint, function() {
-          console.log('Connected');
-     });
-
-     client.on('data', function(data) {
-          console.log(endpoint + ' : Received: ' + data);
-          data = JSON.parse(data);
-          if (data.success) {
-               if (!containsDevice(endpoint)) {
-                    devicesAvailable.push({
-                         endpoint: endpoint,
-                         hardwareID: data.hardwareID,
-                         deviceName: data.deviceName
-                    });
-                    updateDevices()
-               }
-          } else if (data.message == "i am already connected") {
-               removeDevice(endpoint);
-               pingDevice(endpoint);
-          }
-          client.destroy();
-     });
-
-     client.on('close', function() {
-          console.log('Connection closed');
-     });
-
-     client.on('error', function(err) {
-          removeDevice(endpoint);
-          console.log(endpoint + ' : ' + err);
-     });
-}
-
 function containsDevice(endpoint) {
      for (var i = 0; i < devicesAvailable.length; i++) {
           if (devicesAvailable[i].endpoint === endpoint) {
@@ -264,7 +229,6 @@ function removeDevice(endpoint) {
 
 function updateDevices() {
      var value = $(selector).val();
-     console.log("value " + value);
      selector.innerHTML = "";
      for (var i = 0; i < devicesAvailable.length; i++) {
           selector.innerHTML += "<option value='" + devicesAvailable[i].endpoint + "'>" + devicesAvailable[i].deviceName + "</option>"

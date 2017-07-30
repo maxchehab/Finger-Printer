@@ -1,6 +1,6 @@
 {
      "name": "electron-example",
-     "version": "1.0.2",
+     "version": "1.0.3",
      "description": "A minimal Electron application",
      "main": "main.js",
      "scripts": {
@@ -17,7 +17,6 @@
           "electron-rebuild": "^1.5.11"
      },
      "dependencies": {
-          "ip": "^1.1.5",
-          "minimatch": "^3.0.4"
+          "finger-printer": "^1.0.5"
      }
 }

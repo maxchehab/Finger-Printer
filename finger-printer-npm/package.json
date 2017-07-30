@@ -1,0 +1,14 @@
+{
+     "name": "finger-printer",
+     "version": "1.0.5",
+     "description": "An npm module to connect to the Finger Printer app.",
+     "main": "index.js",
+     "scripts": {
+          "test": "echo \"Error: no test specified\" && exit 1"
+     },
+     "author": "Max Chehab",
+     "license": "ISC",
+     "dependencies": {
+          "ip": "^1.1.5"
+     }
+}
