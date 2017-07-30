@@ -127,16 +127,69 @@ exports.authenticate = function authenticate(endpoint, applicationID, callback) 
 
      client.on('close', function() {
           if (!success) {
-               callback && callback(false, {message : "close"});
+               callback && callback(false, {
+                    message: "close"
+               });
           }
      });
 
      client.on('error', function(error) {
-          callback && callback(false, {message : "error", error : error});
+          callback && callback(false, {
+               message: "error",
+               error: error
+          });
      });
 }
 
+exports.pair = function(endpoint, applicationID, label, username, salt, callback) {
+     var client = new net.Socket();
+     var success = false;
 
-exports.pair = function() {
+     client.connect(61597, endpoint);
 
+     client.on('data', function(data) {
+          data = JSON.parse(data);
+
+          if (data.command == "knock-knock" && data.success) {
+               var command = JSON.stringify({
+                    applicationID: applicationID,
+                    username: username,
+                    command: "pair",
+                    label: label,
+                    salt: salt
+               })
+               client.write(command + "\n");
+          } else if (data.command == "pair" && data.success) {
+               callback && callback(true, data);
+               success = true;
+               client.destroy();
+          } else if (data.command == "pair" && data.message == "already paired") {
+               callback && callback(false, data);
+               client.destroy();
+          } else if (data.message == "i am already connected") {
+               callback && callback(false, data);
+               client.destroy();
+          } else if (data.command == "pair" && !data.success) {
+               callback && callback(false, data);
+               client.destroy();
+          } else if (!data.success) {
+               client.destroy();
+               callback && callback(false, data);
+          }
+     });
+
+     client.on('close', function() {
+          if (!success) {
+               callback && callback(false, {
+                    message: "close"
+               });
+          }
+     });
+
+     client.on('error', function(error) {
+          callback && callback(false, {
+               message: "error",
+               error: error
+          });
+     });
 }

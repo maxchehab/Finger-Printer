@@ -1,6 +1,6 @@
 {
      "name": "finger-printer",
-     "version": "1.0.10",
+     "version": "1.0.11",
      "description": "An npm module to connect to the Finger Printer app.",
      "main": "index.js",
      "scripts": {

@@ -5,9 +5,6 @@
 let APPLICATIONID = "electron-example-3.7";
 let LABEL = "Max's Computer";
 
-var net = require('net');
-
-
 var fingerprinter = require('finger-printer');
 
 
@@ -25,15 +22,12 @@ fingerprinter.on('removeDevice', function(endpoint) {
 });
 
 
-
-
 var selector = document.getElementById("phone-select");
 
 var devicesAvailable = [];
 updateDevices();
 
 var scanIntervalID;
-var scanning = false;
 
 function startScan() {
      fingerprinter.findDevices();
@@ -49,35 +43,62 @@ startScan();
 $('#register-button').click(function() {
      stopScan()
      startTransitionAnimation();
-     pairDevice($('#phone-select').find(":selected").val());
+     fingerprinter.pair($('#phone-select').find(":selected").val(),
+          APPLICATIONID,
+          LABEL,
+          $('#username').val(),
+          saltGenerator(),
+          function(success, data) {
+               if (success) {
+                    updateUsername(data.username);
+                    successAnimation();
+               } else if (data.message == "already paired") {
+                    error("Device is already paired with this application. Maybe you want to login?");
+                    cancelTransitionAnimation();
+               } else if (data.message == "i am already connected") {
+                    error("Device became unavailable.");
+                    cancelTransitionAnimation();
+               } else if (data.message == "close" || data.message == "error" || data.message == "ran pair") {
+                    error("Device timed out. Please try again.");
+                    cancelTransitionAnimation();
+               } else {
+                    error("Unexpected response. Please contact an administrator.");
+                    cancelTransitionAnimation();
+               }
+
+               if(!success){
+                    startScan();
+               }
+          });
 });
 
 $('#login-button').click(function() {
      stopScan()
      startTransitionAnimation();
-     fingerprinter.authenticate($('#phone-select').find(":selected").val(), APPLICATIONID, function(success, data) {
-          if (success) {
-               updateUsername(data.username);
-               successAnimation();
-               stopScan();
-          } else if (data.message == "i do not know that applicationID") {
-               error("Device does not know this application. Maybe you want to register?");
-               cancelTransitionAnimation();
+     fingerprinter.authenticate($('#phone-select').find(":selected").val(),
+          APPLICATIONID,
+          function(success, data) {
+               if (success) {
+                    updateUsername(data.username);
+                    successAnimation();
+               } else if (data.message == "i do not know that applicationID") {
+                    error("Device does not know this application. Maybe you want to register?");
+                    cancelTransitionAnimation();
+               } else if (data.message == "i am already connected") {
+                    error("Device became unavailable.");
+                    cancelTransitionAnimation();
+               } else if (data.message == "close" || data.message == "error" || data.message == "ran authentication") {
+                    error("Device timed out. Please try again.");
+                    cancelTransitionAnimation();
+               } else {
+                    error("Unexpected response. Please contact an administrator.");
+                    cancelTransitionAnimation();
+               }
 
-          } else if (data.message == "i am already connected") {
-               error("Device became unavailable.");
-               cancelTransitionAnimation();
-               startScan();
-          } else if (data.message == "close" || data.message == "error" || data.message == "ran authentication") {
-               error("Device timed out. Please try again.");
-               cancelTransitionAnimation();
-               startScan();
-          }else{
-               console.log(data);
-               error("Unexpected response. Please contact an administrator.");
-               cancelTransitionAnimation();
-          }
-     });
+               if(!success){
+                    startScan();
+               }
+          });
 });
 
 $('#logout').click(function() {
@@ -88,77 +109,6 @@ $('#logout').click(function() {
 
 function updateUsername(username) {
      document.getElementById("welcome").innerHTML = "Welcome back <strong>" + username + "</strong>";
-}
-
-function pairDevice(endpoint) {
-     console.log("pairing : " + endpoint);
-
-     var client = new net.Socket();
-     var pairSuccess = false;
-
-
-     client.setTimeout(30000);
-     client.on('timeout', () => {
-          client.destroy();
-     });
-     client.connect(61597, endpoint, function() {
-          console.log('Connected');
-     });
-
-     client.on('data', function(data) {
-          console.log(endpoint + ' : Received : ' + data);
-          data = JSON.parse(data);
-
-          if (data.command == "knock-knock" && data.success) {
-               var command = JSON.stringify(new pairCommand(APPLICATIONID, LABEL, $('#username').val()));
-               console.log("pairing : " + command);
-               client.write(command + "\n");
-          } else if (data.command == "pair" && data.success) {
-               successAnimation();
-               stopScan()
-               updateUsername(data.username);
-               pairSuccess = true;
-               client.destroy();
-          } else if (data.command == "pair" && data.message == "already paired") {
-               error("Device is already paired with this application. Maybe you want to login?");
-               console.log("already paired");
-               cancelTransitionAnimation();
-               client.destroy();
-               startScan();
-          } else if (data.message == "i am already connected") {
-               console.log("already connected")
-               cancelTransitionAnimation();
-               client.destroy();
-               startScan();
-               error("Device became unavailable.");
-          } else if (data.command == "pair" && !data.success) {
-               console.log("authentication failed");
-               cancelTransitionAnimation();
-               client.destroy();
-               error("Authentication failed. Please make sure your fingerprint is saved to your device.");
-          } else if (!data.success) {
-               console.log(data.message);
-               cancelTransitionAnimation();
-               client.destroy();
-               error("Request was invalid. Please contact an administrator.");
-          }
-     });
-
-     client.on('close', function() {
-          console.log(endpoint + ' : Connection closed');
-          if (!pairSuccess) {
-               error("Device has timed out.");
-               cancelTransitionAnimation();
-               startScan()
-          }
-     });
-
-     client.on('error', function(err) {
-          console.log(endpoint + ' : ' + err);
-          error("Device has timed out.");
-          cancelTransitionAnimation();
-          startScan()
-     });
 }
 
 function containsDevice(endpoint) {
@@ -203,28 +153,11 @@ function updateDevices() {
                hidePhoneTick();
           }
      }
-
-
-
-}
-
-function pairCommand(applicationID, label, username) {
-     this.applicationID = applicationID;
-     this.username = username;
-     this.command = "pair";
-     this.label = label;
-     this.salt = saltGenerator();
-}
-
-function authenticateCommand(applicationID) {
-     this.applicationID = applicationID;
-     this.command = "authenticate";
 }
 
 function saltGenerator() {
      return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 }
-
 
 function error(message, duration, bgColor, txtColor, height) {
 
