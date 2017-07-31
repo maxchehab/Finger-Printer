@@ -256,7 +256,7 @@ public class ServerService extends Service {
                                 final String authApplicationID = rootobj.get("applicationID").getAsString();
 
                                 if(!containsApplication(authApplicationID)){
-                                    writer.println("{\"success\":false,\"command\":\"authenticate\",\"message\":\"i do not know that user\"}");
+                                    writer.println("{\"success\":false,\"command\":\"authenticate\",\"message\":\"i do not know that applicationID\"}");
                                     break;
                                 }
 
