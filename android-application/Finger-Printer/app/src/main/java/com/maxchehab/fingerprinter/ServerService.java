@@ -161,7 +161,7 @@ public class ServerService extends Service {
                     writer.println("{\"success\":" + authResponse + ",\"username\":\"" + username + "\",\"command\":\"pair\",\"message\":\"ran pair\",\"uniqueKey\":\"" + uniqueKey + "\",\"hardwareID\":\"" + hardwareID + "\"}");
                 }else{
                     uniqueKey = getUniqueKey(authApplicationID,username);
-                    writer.println("{\"success\":" + authResponse + ",\"username\":\"" + username + "\",\"command\":\"authenticate\",\"message\":\"ran authentication\",\"uniqueKey\":\"" + uniqueKey + "\"}");
+                    writer.println("{\"success\":" + authResponse + ",\"username\":\"" + username + "\",\"command\":\"authenticate\",\"message\":\"ran authentication\",\"uniqueKey\":\"" + uniqueKey + "\",\"hardwareID\":\"" + hardwareID + "\"}");
                 }
 
                 synchronized (authenticateLock) {
