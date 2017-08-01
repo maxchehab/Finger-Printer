@@ -9,15 +9,188 @@ Checkout the npm repository [here](https://www.npmjs.com/package/finger-printer)
 
 
 # Documentation
+
+## **NPM Package**
+
+To install: `npm install finger-printer`
+
+To require: `let fingerprinter = require('finger-printer');`
+
+## `Locate Device`
+
+### Add Device
+
+> **Callback Parameters:**
+> * `device` describes the device as an object with three variables.
+>
+> | `device.endpoint`  | `device.hardwareID` | `device.deviceName` |
+> | ------------- | ------------- |------------- |
+> |  describes the ip address as a string | a unique string describing the device  | a name representing the device |
+> | `"10.0.1.23"`  | `"9696a472835e0d3d"`  | `"SAMSUNG-SM-G930V"` |
+
+> **Example:**
+> ```javascript
+> fingerprinter.on('addDevice', function(device) {
+>      //add device
+> });
+> ```
+
+### Remove Device
+
+> **Callback Parameters**
+> * `endpoint`
+> 
+> | `endpoint` | 
+> | ------------- |
+> | describes the ip address as a string | 
+> | `"10.0.1.23"` | 
+
+> **Example:**
+>```javascript
+> fingerprinter.on('removeDevice', function(endpoint) {
+>      //remove device
+> });
+> ```
+
+### Find Devices
+> **Example:**
+> ```javascript
+> fingerprinter.findDevices();
+> ```
+
+
+
+## `Pair Device`
+> **Function Parameters:**
+> * `endpoint`
+> 
+> | `endpoint` | 
+> | ------------- |
+> | describes the ip address as a string | 
+> | `"10.0.1.23"` | 
+> 
+> * `applicationID`
+> 
+> | `applicationID` | 
+> | ------------- |
+> | unique string associated to an application | 
+> | `"ASDF34JDBN2H..."` | 
+> 
+> * `label`
+> 
+> | `label` | 
+> | ------------- |
+> | A string describing the application | 
+> | `"My Application"` | 
+> 
+> * `username`
+> 
+> | `username` | 
+> | ------------- |
+> | Desired username for user | 
+> | `"User1234"` | 
+> 
+> * `salt`
+> 
+> | `salt` | 
+> | ------------- |
+> | A random string that is included during the hashing process of the pairing  | 
+> | `"My Application"` | 
+> 
+
+> **Callback Parameters:**
+> * `success`
+> 
+> | `success`  | 
+> | ------------- |
+> |  describes the success of the pairing process | 
+> | `true | false`  | 
+>
+> * `data` describes the data associated with the request.
+> 
+> | `data.success`  | `data.username` | `data.command` | `data.message`| `data.uniqueKey` | `data.hardwareID` | 
+> | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | 
+> |  describes the success of the pairing process | username paired with application | request command | additional message data | uniqueKey associated with user and application | a unique string describing the device |
+> | `true \| false`  | `"user1234"` | `"pair"` | `"ran pair"` | `"BF5C9D7ASDF32NDFNU31..."` | `"9696a472835e0d3d"` |
+
+
+> **Example:**
+> ```javascript
+> fingerprinter.pair(endpoint, applicationID, label, username, salt, function(success, data) {
+>      if (success) {
+>           success();
+>      } else if (data.message == "already paired") {
+>           error("Device is already paired with this application. Maybe you want to login?");
+>      } else if (data.message == "i am already connected") {
+>           error("Device became unavailable.");
+>      } else if (data.message == "close" || data.message == "error" || data.message == "ran pair") {
+>           error("Device timed out. Please try again.");
+>      } else {
+>           error("Unexpected response. Please contact an administrator.");
+>      }
+> });
+> ```
+
+
+## `Authenticate Device`
+> **Function Parameters:**
+> * `endpoint`
+> 
+> | `endpoint` | 
+> | ------------- |
+> | describes the ip address as a string | 
+> | `"10.0.1.23"` | 
+> 
+> * `applicationID`
+> 
+> | `applicationID` | 
+> | ------------- |
+> | unique string associated to an application | 
+> | `"ASDF34JDBN2H..."` | 
+
+
+> **Callback Parameters:**
+> * `success`
+> 
+> | `success`  | 
+> | ------------- |
+> |  describes the success of the authentication process | 
+> | `true | false`  | 
+>
+> * `data` describes the data associated with the request.
+> 
+> | `data.success`  | `data.username` | `data.command` | `data.message`| `data.uniqueKey` | `data.hardwareID` | 
+> | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | 
+> |  describes the success of the authentication process | username authenticated with application | request command | additional message data | uniqueKey associated with user and application | a unique string describing the device |
+> | `true \| false`  | `"user1234"` | `"authenticate"` | `"ran authentication"` | `"BF5C9D7ASDF32NDFNU31..."` | `"9696a472835e0d3d"` |
+
+> **Example:**
+> ```javascript
+> fingerprinter.authenticate(endpoint, applicationID, function(success, data) {
+>      if (success) {
+>           success();
+>      } else if (data.message == "i do not know that applicationID") {
+>           error("Device does not know this application. Maybe you want to register?");
+>      } else if (data.message == "i am already connected") {
+>           error("Device became unavailable.");
+>      } else if (data.message == "close" || data.message == "error" || data.message == "ran authentication") {
+>          error("Device timed out. Please try again.");
+>      } else {
+>           error("Unexpected response. Please contact an administrator.");
+>      }
+> });
+> ```
+
+
 ## Finger Printer Protocol
 
-The following are global guidelines describing the Finger Printer protocol.
-
-* The Finger Printer socket will timeout after 30 seconds.
-* All Finger Printer sockets communicate on port `61597`.
-* Only one application can connect to Finger Printer at a time.
-* If not already connected with another device, Finger Printer will send a `knock-knock` response on connection.
-* If already connected, Finger Printer will respond with `{"success":false,"message":"i am already connected"}` and disconnect.
+>**Protocol Guidelines**
+>
+>* The Finger Printer socket will timeout after 30 seconds.
+>* All Finger Printer sockets communicate on port `61597`.
+>* Only one application can connect to Finger Printer at a time.
+>* If not already connected with another device, Finger Printer will send a `knock-knock` response per connection.
+>* If already connected, Finger Printer will respond with `{"success":false,"message":"i am already connected"}` and disconnect.
 
 ## Requests
 
@@ -68,7 +241,7 @@ A `pair` request will add a new user to the Finger Printer device's local databa
 }
 ```
 
-**Successful response:**
+**Successful Response:**
 ```json
 {
      "success": true,
@@ -79,7 +252,7 @@ A `pair` request will add a new user to the Finger Printer device's local databa
      "hardwareID": "9696a472835e0d3d"
 }
 ```
-**Unsuccessful response (already paired):**
+**Unsuccessful Response (already paired):**
 ```json
 {
      "success": false,
@@ -87,7 +260,7 @@ A `pair` request will add a new user to the Finger Printer device's local databa
      "message": "already paired"
 }
 ```
-**Treat the `uniqueKey` and `hardwareID` as a password. Hash and salt it in your database. Every successful authentication response will contain an *__identical__* `uniqueKey` and `hardwareID`.**
+>Treat the `uniqueKey` and `hardwareID` as a password. Hash and salt it in your database. Every successful authentication response will contain an **identical** `uniqueKey` and `hardwareID`.
 
 ### `authenticate`
 An `authenticate` request will authenticate an application. Because Finger Printer can contain multiple users per application, the username to authenticate with will be selected by the user in the app.
@@ -127,7 +300,7 @@ An `authenticate` request will authenticate an application. Because Finger Print
 }
 ```
 
-**Treat the `uniqueKey` and `hardwareID` as a password. Hash and salt it in your database. Every successful authentication response will contain an *__identical__* `uniqueKey` and `hardwareID`.**
+>Treat the `uniqueKey` and `hardwareID` as a password. Hash and salt it in your database. Every successful authentication response will contain an **identical** `uniqueKey` and `hardwareID`.
 
 ## Other Responses
 **Unkown Command:**
@@ -137,7 +310,7 @@ An `authenticate` request will authenticate an application. Because Finger Print
      "message": "i do not understand that command"
 }
 ```
-**Internal Error:**
+ **Internal Error:**
 ```json
 {
      "success": false,
