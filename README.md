@@ -2,11 +2,11 @@
 
 Finger Printer is a mobile application that can authenticate desktop applications using a device's fingerprint reader.
 
+[![Finger Printer Demo](https://img.youtube.com/vi/kkNuT3gb7R8/0.jpg)](https://www.youtube.com/watch?v=kkNuT3gb7R8)
+
 Download the app [here](https://play.google.com/store/apps/details?id=com.maxchehab.fingerprinter).
 
 Checkout the npm repository [here](https://www.npmjs.com/package/finger-printer).
-
-
 
 # Documentation
 
