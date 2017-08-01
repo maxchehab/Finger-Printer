@@ -17,6 +17,6 @@
           "electron-rebuild": "^1.6.0"
      },
      "dependencies": {
-          "finger-printer": "^1.0.11",
+          "finger-printer": "^1.1.1"
      }
 }
